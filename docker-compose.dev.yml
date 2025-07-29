@@ -1,0 +1,52 @@
+# docker-compose.dev.yml (ROOT LEVEL - DEVELOPMENT OVERRIDES + DB GUI)
+
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile.dev
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+    volumes:
+      - ./apps/backend/src:/app/apps/backend/src
+      - ./apps/backend/package.json:/app/apps/backend/package.json
+      - backend_data:/app/apps/backend/data
+
+  # Database GUI - ONLY AVAILABLE IN DEVELOPMENT
+  db-gui:
+    image: coleifer/sqlite-web
+    container_name: scraper-db-gui-dev
+    restart: unless-stopped
+    ports:
+      - '8080:8080'
+    volumes:
+      - backend_data:/data
+    command:
+      ['sqlite_web', '/data/database.db', '--host', '0.0.0.0', '--port', '8080']
+    depends_on:
+      - backend
+    networks:
+      - scraper-network
+
+  # Future: Frontend with hot reload
+  # frontend:
+  #   build:
+  #     context: .
+  #     dockerfile: apps/frontend/Dockerfile.dev
+  #   volumes:
+  #     - ./apps/frontend/src:/app/apps/frontend/src
+  #   environment:
+  #     - NODE_ENV=development
+  #     - NEXT_PUBLIC_API_URL=http://backend:3001
+
+# Ensure networks and volumes are properly defined
+networks:
+  scraper-network:
+    external: false
+
+volumes:
+  backend_data:
+    external: false

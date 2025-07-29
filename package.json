@@ -1,0 +1,33 @@
+{
+  "name": "bloop",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "pnpm --parallel dev",
+    "build": "pnpm --recursive build",
+    "backend:dev": "pnpm --filter @monorepo/backend dev",
+    "backend:build": "pnpm --filter @monorepo/backend build",
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:dev": "docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build",
+    "docker:prod": "docker compose up -d",
+    "docker:backend:logs": "docker compose logs -f backend",
+    "docker:clean": "docker compose down -v && docker system prune -af"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^24.1.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "typescript": "^5.8.3"
+    }
+  }
+}

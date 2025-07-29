@@ -1,0 +1,57 @@
+# .dockerignore (ROOT LEVEL - excludes files from Docker build context)
+
+# Node modules and package manager files
+node_modules
+*/node_modules
+**/node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Build outputs
+dist
+build
+.next
+coverage
+
+# Environment files (secrets shouldn't be in Docker)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Development files
+.git
+.gitignore
+README.md
+*.md
+.vscode
+.idea
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+tests
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+.nyc_output
+
+# Docker files (avoid copying Docker config into container)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Logs
+logs
+*.log
+
+# Development database (will be mounted as volume)
+apps/backend/data/database.db
+
+# Temporary files
+tmp
+temp
