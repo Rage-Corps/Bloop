@@ -60,6 +60,15 @@ class ScrapingService {
     const job = this.jobs.get(jobId);
     if (!job) return;
 
+    if (!env.BASE_SCRAPE_URL) {
+      this.updateJobStatus(
+        jobId,
+        'failed',
+        'BASE_SCRAPE_URL environment variable is not configured'
+      );
+      return;
+    }
+
     try {
       // Update job status to running
       this.updateJobStatus(jobId, 'running');
@@ -71,7 +80,7 @@ class ScrapingService {
       );
 
       // Fetch and log HTML content
-      const html = await this.fetchPageHTML(env.BASE_SCRAPE_URL!);
+      const html = await this.fetchPageHTML(env.BASE_SCRAPE_URL);
       console.log(`\n=== HTML Content for ${env.BASE_SCRAPE_URL} ===`);
       console.log(html);
       console.log(`=== End HTML Content ===\n`);
@@ -90,14 +99,17 @@ class ScrapingService {
         }
       });
 
+      const maxPageIndex = getMaxPageIndex(links, env.BASE_SCRAPE_URL);
+
       const filteredMediaLinks = filterMediaLinks(links, env.BASE_SCRAPE_URL);
 
       console.log(`Page title: ${title}`);
       console.log(`Found ${links.length} links and ${images} images`);
       console.log('\n=== All Links Found ===');
-      filteredMediaLinks.forEach((link, index) => {
+      links.forEach((link, index) => {
         console.log(`${index + 1}. ${link}`);
       });
+      console.log('MAX PAGE', maxPageIndex);
       console.log('=== End Links ===\n');
 
       // Update job with basic stats
@@ -209,7 +221,44 @@ class ScrapingService {
 // Export singleton instance
 export const scrapingService = new ScrapingService();
 
+function getMaxPageIndex(links: string[], baseScrapUrl: string): number {
+  const pagePattern = /\/page\/(\d+)\/$/;
+  let maxIndex = 0;
+
+  for (const link of links) {
+    const match = link.match(pagePattern);
+    if (match) {
+      const pageIndex = parseInt(match[1], 10);
+      if (pageIndex > maxIndex) {
+        maxIndex = pageIndex;
+      }
+    }
+  }
+
+  return maxIndex;
+}
+
 function filterMediaLinks(links: string[], baseScrapUrl: string) {
   const baseUrl = new URL(baseScrapUrl).origin;
-  return links.filter((link) => {});
+  const uniqueLinks = new Set<string>();
+  const excludePaths = ['/contact-us', '/legal-notice', '/page', '/category'];
+
+  for (const link of links) {
+    if (link.startsWith(baseUrl)) {
+      // Exclude base URL and base URL with trailing slash
+      if (link === baseUrl || link === `${baseUrl}/`) {
+        continue;
+      }
+
+      const shouldExclude = excludePaths.some((path) =>
+        link.includes(`${baseUrl}${path}`)
+      );
+
+      if (!shouldExclude) {
+        uniqueLinks.add(link);
+      }
+    }
+  }
+
+  return Array.from(uniqueLinks);
 }
