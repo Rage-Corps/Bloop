@@ -1,8 +1,15 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-export default defineNuxtRouteMiddleware((to, from) => {
-  const { isLoggedIn } = useAuth();
+export default defineNuxtRouteMiddleware(async (to, from) => {
+  const { session } = useAuth();
 
-  if (isLoggedIn.value) {
+  // Wait for session to load on client side
+  if (process.client) {
+    await nextTick();
+    // Give session a moment to hydrate
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+  if (session.value?.data?.user) {
     return navigateTo('/dashboard');
   }
 });

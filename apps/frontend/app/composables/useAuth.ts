@@ -17,7 +17,7 @@ export const useAuth = () => {
         // better-auth will handle this through session configuration
         callbackURL: '/dashboard', // Where to redirect after login
       });
-
+      console.log('RESULT', result);
       if (typeof window !== 'undefined') {
         if (rememberMe) {
           // For "keep me logged in", we can set longer-lived sessions

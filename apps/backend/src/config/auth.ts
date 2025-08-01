@@ -10,4 +10,8 @@ export const auth = betterAuth({
   },
   baseURL: `http://${env.HOST}:${env.PORT}`,
   secret: env.AUTH_SECRET,
+  trustedOrigins: [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+  ],
 });
