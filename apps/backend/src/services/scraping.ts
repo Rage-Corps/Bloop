@@ -156,9 +156,9 @@ class ScrapingService {
       const $ = cheerio.load(html);
       const title = $('title').text();
 
-      const links = extractLinksFromHTML(html);
-      const maxPageIndex = getMaxPageIndex(links, env.BASE_SCRAPE_URL);
-      const filteredMediaLinks = filterMediaLinks(links, env.BASE_SCRAPE_URL);
+      const links = this.extractLinksFromHTML(html);
+      const maxPageIndex = this.getMaxPageIndex(links, env.BASE_SCRAPE_URL);
+      const filteredMediaLinks = this.filterMediaLinks(links, env.BASE_SCRAPE_URL);
 
       // Update job with discovered information
       jobsDatabase.updateJobProgress(jobId, {
@@ -186,11 +186,10 @@ class ScrapingService {
       console.log('MAX PAGE', maxPageIndex);
       console.log('=== End Links ===\n');
 
-      await handleMediaLinks(
+      await this.handleMediaLinks(
         filteredMediaLinks,
-        env.BASE_SCRAPE_URL,
-        this.MAX_PAGE ?? maxPageIndex,
         request.options?.force || false,
+        request.options?.waitTime || 1000,
         jobId
       );
 
@@ -265,483 +264,418 @@ class ScrapingService {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  private async fetchPageHTML(url: string): Promise<string> {
-    return fetchPageHTML(url);
-  }
-
   // Cleanup completed jobs older than 24 hours
   cleanupOldJobs(): number {
     return jobsDatabase.cleanupOldJobs();
   }
-}
 
-// Export singleton instance
-export const scrapingService = new ScrapingService();
+  // Private utility methods
+  private getMaxPageIndex(links: string[], baseScrapUrl: string): number {
+    const pagePattern = /\/page\/(\d+)\/$/;
+    let maxIndex = 0;
 
-function getMaxPageIndex(links: string[], baseScrapUrl: string): number {
-  const pagePattern = /\/page\/(\d+)\/$/;
-  let maxIndex = 0;
-
-  for (const link of links) {
-    const match = link.match(pagePattern);
-    if (match) {
-      const pageIndex = parseInt(match[1], 10);
-      if (pageIndex > maxIndex) {
-        maxIndex = pageIndex;
+    for (const link of links) {
+      if (link.startsWith(baseScrapUrl)) {
+        const match = link.match(pagePattern);
+        if (match) {
+          const index = parseInt(match[1], 10);
+          if (index > maxIndex) {
+            maxIndex = index;
+          }
+        }
       }
     }
+
+    return maxIndex;
   }
 
-  return maxIndex;
-}
-
-function filterMediaLinks(links: string[], baseScrapUrl: string) {
-  const baseUrl = new URL(baseScrapUrl).origin;
-  const uniqueLinks = new Set<string>();
-  const excludePaths = ['/contact-us', '/legal-notice', '/page', '/category'];
-
-  for (const link of links) {
-    if (link.startsWith(baseUrl)) {
-      // Exclude base URL and base URL with trailing slash
-      if (link === baseUrl || link === `${baseUrl}/`) {
-        continue;
-      }
-
-      const shouldExclude = excludePaths.some((path) =>
-        link.includes(`${baseUrl}${path}`)
+  private filterMediaLinks(links: string[], baseScrapUrl: string) {
+    const cleanBaseUrl = baseScrapUrl.replace(/\/+$/, '');
+    return links.filter((link) => {
+      const cleanLink = link.replace(/\/+$/, '');
+      return (
+        cleanLink.startsWith(cleanBaseUrl) &&
+        cleanLink !== cleanBaseUrl &&
+        !cleanLink.includes('/page/')
       );
-
-      if (!shouldExclude) {
-        uniqueLinks.add(link);
-      }
-    }
+    });
   }
 
-  return Array.from(uniqueLinks);
-}
+  private async fetchPageHTML(url: string): Promise<string> {
+    const response = await fetch(url, {
+      headers: DEFAULT_HEADERS,
+    });
 
-async function handleMediaLinks(
-  mediaLinks: string[],
-  baseUrl: string,
-  maxPageIndex: number,
-  force: boolean = false,
-  jobId?: string
-) {
-  console.log(`\n=== Processing Media Links ===`);
-  console.log(`Processing ${mediaLinks.length} links from first page`);
-  console.log(`Max page index: ${maxPageIndex}`);
-  console.log(`Force mode: ${force ? 'ON' : 'OFF'}`);
-
-  if (!force) {
-    // Check if all links from first page already exist
-    const firstPageExistingCount = mediaLinks.filter((link) =>
-      mediaDatabase.pageUrlExists(link)
-    ).length;
-
-    if (firstPageExistingCount === mediaLinks.length) {
-      console.log(
-        `🛑 All ${mediaLinks.length} links from first page already exist in database - skipping all processing`
-      );
-      return;
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    console.log(
-      `📊 ${firstPageExistingCount}/${mediaLinks.length} links already exist in database`
-    );
-  } else {
-    console.log(`⚡ Force mode enabled - bypassing early termination checks`);
+    return response.text();
   }
 
-  // Process all links from the first page
-  for (const link of mediaLinks) {
-    await processLink(link, force, jobId);
-  }
+  private extractLinksFromHTML(html: string): string[] {
+    const $ = cheerio.load(html);
+    const links: string[] = [];
 
-  // Update current page progress
-  if (jobId) {
-    jobsDatabase.updateJobProgress(jobId, { currentPage: 1 });
-  }
-
-  // Process additional pages if they exist
-  if (maxPageIndex > 1) {
-    console.log(`\n=== Processing Additional Pages (2-${maxPageIndex}) ===`);
-
-    // Process pages sequentially to allow early termination
-    for (let pageIndex = 2; pageIndex <= maxPageIndex; pageIndex++) {
-      if (jobId) {
-        jobsDatabase.updateJobProgress(jobId, { currentPage: pageIndex });
+    $('a[href]').each((_, element) => {
+      const href = $(element).attr('href');
+      if (href) {
+        links.push(href);
       }
+    });
 
-      const shouldStop = await processPage(pageIndex, baseUrl, force, jobId);
+    return links;
+  }
 
-      if (!force && shouldStop) {
-        console.log(
-          `🛑 Stopping page processing at page ${pageIndex} - all links already exist`
-        );
-        if (jobId) {
-          jobsDatabase.logActivity(
-            jobId,
-            'info',
-            `Early termination at page ${pageIndex} - all links already exist`
+  private getMediaLinkThumbnailAndName(
+    $: cheerio.CheerioAPI
+  ): { thumbnailUrl: string; name: string } | null {
+    const thumbnailElement = $('.rmbd img');
+    if (thumbnailElement.length > 0) {
+      const thumbnailUrl = thumbnailElement.attr('src') || '';
+      const name = thumbnailElement.attr('alt') || 'Untitled';
+      return { thumbnailUrl, name };
+    }
+    return null;
+  }
+
+  private getMediaLinkInfo(
+    $: cheerio.CheerioAPI
+  ): { description: string } | null {
+    const descriptionElement = $('.wp-block-columns p').first();
+    if (descriptionElement.length > 0) {
+      const description = descriptionElement.text().trim();
+      return { description };
+    }
+    return null;
+  }
+
+  private getMediaSources($: cheerio.CheerioAPI): { source: string; url: string }[] {
+    const sources: { source: string; url: string }[] = [];
+    $('.wp-block-columns a').each((_, element) => {
+      const url = $(element).attr('href');
+      const text = $(element).text().trim();
+      if (url && text) {
+        sources.push({ source: text, url });
+      }
+    });
+    return sources;
+  }
+
+  private getMediaLinkCategories($: cheerio.CheerioAPI): string[] {
+    const categories: string[] = [];
+    $('.entry-categories a, .cat-links a').each((_, element) => {
+      const category = $(element).text().trim();
+      if (category) {
+        categories.push(category);
+      }
+    });
+    return categories;
+  }
+
+  private storeMedia(
+    media: {
+      name: string | undefined;
+      description: string | undefined;
+      thumbnailUrl: string | undefined;
+      sources: { source: string; url: string }[];
+      categories: string[];
+    },
+    mediaSources: { source: string; url: string }[],
+    mediaCategories: string[],
+    link: string
+  ) {
+    if (
+      media.name &&
+      media.description &&
+      media.thumbnailUrl &&
+      mediaSources.length > 0
+    ) {
+      try {
+        // Check if media already exists by pageUrl
+        const existingMedia = mediaDatabase.getMediaByPageUrl(link);
+        
+        if (existingMedia) {
+          // Update existing media
+          const updated = mediaDatabase.updateMedia(existingMedia.id, {
+            name: media.name,
+            description: media.description,
+            thumbnailUrl: media.thumbnailUrl,
+          });
+
+          // Get existing sources
+          const existingSources = sourcesDatabase.getSourcesByMediaId(existingMedia.id);
+          
+          // For simplicity, we'll replace sources if they're different
+          // In a more sophisticated approach, we could compare and only update changed ones
+          const sourcesChanged = existingSources.length !== mediaSources.length ||
+            !mediaSources.every(newSource => 
+              existingSources.some(existing => 
+                existing.sourceName === newSource.source && existing.url === newSource.url
+              )
+            );
+
+          if (sourcesChanged) {
+            // Only delete and re-add if sources actually changed
+            sourcesDatabase.deleteSourcesByMediaId(existingMedia.id);
+            
+            const sources = mediaSources.map((source) => ({
+              id: randomUUID(),
+              mediaId: existingMedia.id,
+              sourceName: source.source,
+              url: source.url,
+            }));
+
+            sourcesDatabase.addSources(sources);
+          }
+
+          // Check if categories changed
+          const existingCategories = categoriesDatabase.getCategoryNamesByMediaId(existingMedia.id);
+          const categoriesChanged = existingCategories.length !== mediaCategories.length ||
+            !mediaCategories.every(category => existingCategories.includes(category));
+
+          if (categoriesChanged) {
+            // Update categories
+            categoriesDatabase.deleteCategoriesByMediaId(existingMedia.id);
+            if (mediaCategories.length > 0) {
+              categoriesDatabase.addCategories(mediaCategories, existingMedia.id);
+            }
+          }
+
+          console.log(
+            `🔄 Updated existing media "${media.name}" ${sourcesChanged ? 'with updated sources' : '(sources unchanged)'} ${categoriesChanged ? 'with updated categories' : '(categories unchanged)'}`
+          );
+        } else {
+          // Create new media
+          const mediaId = randomUUID();
+
+          mediaDatabase.addMedia({
+            id: mediaId,
+            name: media.name,
+            description: media.description,
+            thumbnailUrl: media.thumbnailUrl,
+            pageUrl: link,
+            categories: [], // Will be populated separately
+          });
+
+          const sources = mediaSources.map((source) => ({
+            id: randomUUID(),
+            mediaId: mediaId,
+            sourceName: source.source,
+            url: source.url,
+          }));
+
+          sourcesDatabase.addSources(sources);
+
+          // Add categories if any
+          if (mediaCategories.length > 0) {
+            categoriesDatabase.addCategories(mediaCategories, mediaId);
+          }
+
+          console.log(
+            `✅ Saved new media "${media.name}" with ${sources.length} sources and ${mediaCategories.length} categories to database`
           );
         }
-        break;
+      } catch (error) {
+        console.error('❌ Failed to save/update media in database:', error);
       }
+    } else {
+      console.log('⚠️ Missing required data, not saving to database');
     }
   }
 
-  console.log(`\n=== Finished Processing All Pages ===`);
-}
+  private async processLink(
+    link: string,
+    force: boolean = false,
+    jobId?: string
+  ) {
+    try {
+      // Check if link already exists in database (unless force mode is enabled)
+      if (!force && mediaDatabase.pageUrlExists(link)) {
+        console.log(`⏭️ Skipped ${link} - already exists in database`);
 
-async function processLink(
-  link: string,
-  force: boolean = false,
-  jobId?: string
-) {
-  try {
-    // Check if link already exists in database (unless force mode is enabled)
-    if (!force && mediaDatabase.pageUrlExists(link)) {
-      console.log(`⏭️ Skipped ${link} - already exists in database`);
+        // Update progress
+        if (jobId) {
+          const job = jobsDatabase.getJobById(jobId);
+          if (job) {
+            jobsDatabase.updateJobProgress(jobId, {
+              linksSkipped: job.linksSkipped + 1,
+            });
+          }
+        }
+        return;
+      }
+
+      console.log(`Processing link: ${link}`);
+
+      const html = await this.fetchPageHTML(link);
+
+      const $ = cheerio.load(html);
+      const thumbnailNameResult = this.getMediaLinkThumbnailAndName($);
+
+      if (thumbnailNameResult) {
+        const { thumbnailUrl, name } = thumbnailNameResult;
+        console.log(`Thumbnail URL: ${thumbnailUrl}`);
+        console.log(`Name: ${name}`);
+      } else {
+        console.log('No thumbnail found with class "rmbd"');
+      }
+
+      const mediaInfo = this.getMediaLinkInfo($);
+
+      const mediaCategories = this.getMediaLinkCategories($);
+
+      if (mediaCategories.length > 0) {
+        console.log(`Categories: ${mediaCategories.join(', ')}`);
+      } else {
+        console.log('No categories found');
+      }
+
+      if (mediaInfo) {
+        console.log(`Description: ${mediaInfo.description}`);
+      } else {
+        console.log('No description found');
+      }
+
+      const mediaSources = this.getMediaSources($);
+
+      if (mediaSources.length > 0) {
+        console.log(`Found ${mediaSources.length} media sources:`);
+        mediaSources.forEach((source, index) => {
+          console.log(`${index + 1}. ${source.source}: ${source.url}`);
+        });
+      } else {
+        console.log('No media sources found');
+      }
+
+      const media = {
+        name: thumbnailNameResult?.name,
+        description: mediaInfo?.description,
+        thumbnailUrl: thumbnailNameResult?.thumbnailUrl,
+        sources: mediaSources,
+        categories: mediaCategories,
+      };
+
+      // Store to database if we have the required data
+      this.storeMedia(media, mediaSources, mediaCategories, link);
 
       // Update progress
       if (jobId) {
         const job = jobsDatabase.getJobById(jobId);
         if (job) {
           jobsDatabase.updateJobProgress(jobId, {
-            linksSkipped: job.linksSkipped + 1,
+            linksProcessed: job.linksProcessed + 1,
           });
         }
       }
-      return;
-    }
-
-    console.log(`Processing link: ${link}`);
-
-    const html = await fetchPageHTML(link);
-
-    const $ = cheerio.load(html);
-    const thumbnailNameResult = getMediaLinkThumbnailAndName($);
-
-    if (thumbnailNameResult) {
-      const { thumbnailUrl, name } = thumbnailNameResult;
-      console.log(`Thumbnail URL: ${thumbnailUrl}`);
-      console.log(`Name: ${name}`);
-    } else {
-      console.log('No thumbnail found with class "rmbd"');
-    }
-
-    const mediaInfo = getMediaLinkInfo($);
-
-    const mediaCategories = getMediaLinkCategories($);
-
-    if (mediaCategories.length > 0) {
-      console.log(`Categories: ${mediaCategories.join(', ')}`);
-    } else {
-      console.log('No categories found');
-    }
-
-    if (mediaInfo) {
-      console.log(`Description: ${mediaInfo.description}`);
-    } else {
-      console.log('No description found');
-    }
-
-    const mediaSources = getMediaSources($);
-
-    if (mediaSources.length > 0) {
-      console.log(`Found ${mediaSources.length} media sources:`);
-      mediaSources.forEach((source, index) => {
-        console.log(`${index + 1}. ${source.source}: ${source.url}`);
-      });
-    } else {
-      console.log('No media sources found');
-    }
-
-    const media = {
-      name: thumbnailNameResult?.name,
-      description: mediaInfo?.description,
-      thumbnailUrl: thumbnailNameResult?.thumbnailUrl,
-      sources: mediaSources,
-      categories: mediaCategories,
-    };
-
-    // Store to database if we have the required data
-    storeMedia(media, mediaSources, mediaCategories, link);
-
-    // Update progress
-    if (jobId) {
-      const job = jobsDatabase.getJobById(jobId);
-      if (job) {
-        jobsDatabase.updateJobProgress(jobId, {
-          linksProcessed: job.linksProcessed + 1,
-        });
-      }
-    }
-  } catch (error) {
-    console.error(`Error processing link ${link}:`, error);
-  }
-}
-
-function storeMedia(
-  media: {
-    name: string | undefined;
-    description: string | undefined;
-    thumbnailUrl: string | undefined;
-    sources: { source: string; url: string }[];
-    categories: string[];
-  },
-  mediaSources: { source: string; url: string }[],
-  mediaCategories: string[],
-  link: string
-) {
-  if (
-    media.name &&
-    media.description &&
-    media.thumbnailUrl &&
-    mediaSources.length > 0
-  ) {
-    try {
-      // Check if media already exists by pageUrl
-      const existingMedia = mediaDatabase.getMediaByPageUrl(link);
-      
-      if (existingMedia) {
-        // Update existing media
-        const updated = mediaDatabase.updateMedia(existingMedia.id, {
-          name: media.name,
-          description: media.description,
-          thumbnailUrl: media.thumbnailUrl,
-        });
-
-        // Get existing sources
-        const existingSources = sourcesDatabase.getSourcesByMediaId(existingMedia.id);
-        
-        // For simplicity, we'll replace sources if they're different
-        // In a more sophisticated approach, we could compare and only update changed ones
-        const sourcesChanged = existingSources.length !== mediaSources.length ||
-          !mediaSources.every(newSource => 
-            existingSources.some(existing => 
-              existing.sourceName === newSource.source && existing.url === newSource.url
-            )
-          );
-
-        if (sourcesChanged) {
-          // Only delete and re-add if sources actually changed
-          sourcesDatabase.deleteSourcesByMediaId(existingMedia.id);
-          
-          const sources = mediaSources.map((source) => ({
-            id: randomUUID(),
-            mediaId: existingMedia.id,
-            sourceName: source.source,
-            url: source.url,
-          }));
-
-          sourcesDatabase.addSources(sources);
-        }
-
-        // Check if categories changed
-        const existingCategories = categoriesDatabase.getCategoryNamesByMediaId(existingMedia.id);
-        const categoriesChanged = existingCategories.length !== mediaCategories.length ||
-          !mediaCategories.every(category => existingCategories.includes(category));
-
-        if (categoriesChanged) {
-          // Update categories
-          categoriesDatabase.deleteCategoriesByMediaId(existingMedia.id);
-          if (mediaCategories.length > 0) {
-            categoriesDatabase.addCategories(mediaCategories, existingMedia.id);
-          }
-        }
-
-        console.log(
-          `🔄 Updated existing media "${media.name}" ${sourcesChanged ? 'with updated sources' : '(sources unchanged)'} ${categoriesChanged ? 'with updated categories' : '(categories unchanged)'}`
-        );
-      } else {
-        // Create new media
-        const mediaId = randomUUID();
-
-        mediaDatabase.addMedia({
-          id: mediaId,
-          name: media.name,
-          description: media.description,
-          thumbnailUrl: media.thumbnailUrl,
-          pageUrl: link,
-          categories: [], // Will be populated separately
-        });
-
-        const sources = mediaSources.map((source) => ({
-          id: randomUUID(),
-          mediaId: mediaId,
-          sourceName: source.source,
-          url: source.url,
-        }));
-
-        sourcesDatabase.addSources(sources);
-
-        // Add categories if any
-        if (mediaCategories.length > 0) {
-          categoriesDatabase.addCategories(mediaCategories, mediaId);
-        }
-
-        console.log(
-          `✅ Saved new media "${media.name}" with ${sources.length} sources and ${mediaCategories.length} categories to database`
-        );
-      }
     } catch (error) {
-      console.error('❌ Failed to save/update media in database:', error);
+      console.error(`Error processing link ${link}:`, error);
     }
-  } else {
-    console.log('⚠️ Missing required data, not saving to database');
-  }
-}
-
-function getMediaLinkThumbnailAndName(
-  $: cheerio.CheerioAPI
-): { thumbnailUrl: string; name: string } | null {
-  const thumbnailImg = $('img.rmbd, noscript img.rmbd').first();
-  const thumbnailUrl = thumbnailImg.attr('data-src');
-  const altText = thumbnailImg.attr('alt');
-
-  if (!thumbnailUrl) {
-    return null;
   }
 
-  const name = altText ? decodeURIComponent(altText) : '';
+  private async handleMediaLinks(
+    mediaLinks: string[],
+    force: boolean,
+    waitTime: number,
+    jobId: string
+  ) {
+    console.log(`Processing ${mediaLinks.length} media links...`);
 
-  return { thumbnailUrl, name };
-}
+    for (let i = 0; i < mediaLinks.length; i++) {
+      const link = mediaLinks[i];
 
-function getMediaLinkInfo(
-  $: cheerio.CheerioAPI
-): { description: string } | null {
-  const descriptionDiv = $('div.the_description');
-  const firstParagraph = descriptionDiv.find('p').first();
-  const description = firstParagraph.text().trim();
+      // Check if job was cancelled
+      const job = jobsDatabase.getJobById(jobId);
+      if (!job || job.status === 'cancelled') {
+        console.log('Job was cancelled, stopping processing');
+        return;
+      }
 
-  if (!description) {
-    return null;
+      console.log(`\n📄 Processing media link ${i + 1}/${mediaLinks.length}: ${link}`);
+
+      try {
+        await this.processLink(link, force, jobId);
+
+        // Add delay between requests to be respectful
+        if (i < mediaLinks.length - 1 && waitTime > 0) {
+          console.log(`⏱️ Waiting ${waitTime}ms before next request...`);
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
+        }
+      } catch (error) {
+        console.error(`❌ Failed to process ${link}:`, error);
+        // Continue with next link even if one fails
+      }
+    }
   }
 
-  return { description };
-}
 
-function getMediaSources(
-  $: cheerio.CheerioAPI
-): { source: string; url: string }[] {
-  const linkTabs = $('#link-tabs');
-  const sources: { source: string; url: string }[] = [];
+  private async processPage(
+    pageIndex: number,
+    baseUrl: string,
+    force: boolean = false,
+    jobId?: string
+  ): Promise<boolean> {
+    const pageUrl = `${baseUrl}page/${pageIndex}`;
+    console.log(`\nFetching page ${pageIndex}: ${pageUrl}`);
 
-  linkTabs.find('li a').each((index, element) => {
-    const source = $(element).text().trim();
-    const url = $(element).attr('href');
+    const pageMediaLinks = await this.fetchAndExtractLinks(pageUrl, baseUrl);
+    console.log(
+      `Found ${pageMediaLinks.length} media links on page ${pageIndex}`
+    );
 
-    if (source && url) {
-      sources.push({ source, url });
-    }
-  });
+    if (!force) {
+      // Check if all links already exist
+      if (pageMediaLinks.length > 0) {
+        const existingCount = pageMediaLinks.filter((link) =>
+          mediaDatabase.pageUrlExists(link)
+        ).length;
 
-  return sources;
-}
-
-function getMediaLinkCategories($: cheerio.CheerioAPI): string[] {
-  const categories: string[] = [];
-
-  $('a[rel="category"]').each((index, element) => {
-    const categoryText = $(element).text().trim();
-    if (categoryText) {
-      categories.push(categoryText);
-    }
-  });
-
-  return categories;
-}
-
-// Utility Functions
-
-async function fetchPageHTML(url: string): Promise<string> {
-  try {
-    console.log(`Fetching URL: ${url}`);
-
-    const response = await fetch(url, { headers: DEFAULT_HEADERS });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const html = await response.text();
-    console.log(`Successfully fetched ${html.length} characters from ${url}`);
-
-    return html;
-  } catch (error) {
-    console.error(`Error fetching ${url}:`, error);
-    throw error;
-  }
-}
-
-function extractLinksFromHTML(html: string): string[] {
-  const $ = cheerio.load(html);
-  const links: string[] = [];
-
-  $('a').each((index, element) => {
-    const href = $(element).attr('href');
-    if (href) {
-      links.push(href);
-    }
-  });
-
-  return links;
-}
-
-async function fetchAndExtractLinks(
-  url: string,
-  baseUrl: string
-): Promise<string[]> {
-  try {
-    const html = await fetchPageHTML(url);
-    const allLinks = extractLinksFromHTML(html);
-    return filterMediaLinks(allLinks, baseUrl);
-  } catch (error) {
-    console.error(`Error fetching and extracting links from ${url}:`, error);
-    return [];
-  }
-}
-
-async function processPage(
-  pageIndex: number,
-  baseUrl: string,
-  force: boolean = false,
-  jobId?: string
-): Promise<boolean> {
-  const pageUrl = `${baseUrl}page/${pageIndex}`;
-  console.log(`\nFetching page ${pageIndex}: ${pageUrl}`);
-
-  const pageMediaLinks = await fetchAndExtractLinks(pageUrl, baseUrl);
-  console.log(
-    `Found ${pageMediaLinks.length} media links on page ${pageIndex}`
-  );
-
-  if (!force) {
-    // Check if all links already exist
-    if (pageMediaLinks.length > 0) {
-      const existingCount = pageMediaLinks.filter((link) =>
-        mediaDatabase.pageUrlExists(link)
-      ).length;
-
-      if (existingCount === pageMediaLinks.length) {
         console.log(
-          `🛑 All ${pageMediaLinks.length} links from page ${pageIndex} already exist - stopping further page processing`
+          `📊 Page ${pageIndex}: ${existingCount}/${pageMediaLinks.length} links already exist`
         );
-        return true; // Signal to stop processing further pages
+
+        // If all links exist, stop processing further pages
+        if (existingCount === pageMediaLinks.length) {
+          console.log(
+            `⏭️ Skipping page ${pageIndex} - all ${pageMediaLinks.length} links already exist`
+          );
+          return true; // Signal to stop processing
+        }
+      }
+    }
+
+    // Process the links
+    for (let i = 0; i < pageMediaLinks.length; i++) {
+      const link = pageMediaLinks[i];
+
+      // Check if job was cancelled
+      if (jobId) {
+        const job = jobsDatabase.getJobById(jobId);
+        if (!job || job.status === 'cancelled') {
+          console.log('Job was cancelled, stopping processing');
+          return true;
+        }
       }
 
       console.log(
-        `📊 ${existingCount}/${pageMediaLinks.length} links already exist on page ${pageIndex}`
+        `\n📄 Processing media link ${i + 1}/${pageMediaLinks.length}: ${link}`
       );
+
+      await this.processLink(link, force, jobId);
     }
+
+    return false; // Continue processing
   }
 
-  // Process all links from this page sequentially to avoid overwhelming the target server
-  for (const link of pageMediaLinks) {
-    await processLink(link, force, jobId);
+  private async fetchAndExtractLinks(
+    pageUrl: string,
+    baseUrl: string
+  ): Promise<string[]> {
+    const html = await this.fetchPageHTML(pageUrl);
+    const links = this.extractLinksFromHTML(html);
+    return this.filterMediaLinks(links, baseUrl);
   }
-
-  return false; // Continue processing pages
 }
+
+// Export singleton instance
+export const scrapingService = new ScrapingService();
