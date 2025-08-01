@@ -72,6 +72,14 @@ class MediaDatabase {
     const stmt = db.prepare('SELECT 1 FROM media WHERE pageUrl = ? LIMIT 1');
     return stmt.get(pageUrl) !== undefined;
   }
+
+  // Get media by pageUrl
+  getMediaByPageUrl(pageUrl: string): Media | undefined {
+    const stmt = db.prepare(
+      'SELECT id, name, description, thumbnailUrl, pageUrl FROM media WHERE pageUrl = ?'
+    );
+    return stmt.get(pageUrl) as Media | undefined;
+  }
 }
 
 export const mediaDatabase = new MediaDatabase();

@@ -497,32 +497,73 @@ function storeMedia(
     mediaSources.length > 0
   ) {
     try {
-      const mediaId = randomUUID();
+      // Check if media already exists by pageUrl
+      const existingMedia = mediaDatabase.getMediaByPageUrl(link);
+      
+      if (existingMedia) {
+        // Update existing media
+        const updated = mediaDatabase.updateMedia(existingMedia.id, {
+          name: media.name,
+          description: media.description,
+          thumbnailUrl: media.thumbnailUrl,
+        });
 
-      // Store media record
-      mediaDatabase.addMedia({
-        id: mediaId,
-        name: media.name,
-        description: media.description,
-        thumbnailUrl: media.thumbnailUrl,
-        pageUrl: link,
-      });
+        // Get existing sources
+        const existingSources = sourcesDatabase.getSourcesByMediaId(existingMedia.id);
+        
+        // For simplicity, we'll replace sources if they're different
+        // In a more sophisticated approach, we could compare and only update changed ones
+        const sourcesChanged = existingSources.length !== mediaSources.length ||
+          !mediaSources.every(newSource => 
+            existingSources.some(existing => 
+              existing.sourceName === newSource.source && existing.url === newSource.url
+            )
+          );
 
-      // Store sources
-      const sources = mediaSources.map((source) => ({
-        id: randomUUID(),
-        mediaId: mediaId,
-        sourceName: source.source,
-        url: source.url,
-      }));
+        if (sourcesChanged) {
+          // Only delete and re-add if sources actually changed
+          sourcesDatabase.deleteSourcesByMediaId(existingMedia.id);
+          
+          const sources = mediaSources.map((source) => ({
+            id: randomUUID(),
+            mediaId: existingMedia.id,
+            sourceName: source.source,
+            url: source.url,
+          }));
 
-      sourcesDatabase.addSources(sources);
+          sourcesDatabase.addSources(sources);
+        }
 
-      console.log(
-        `✅ Saved media "${media.name}" with ${sources.length} sources to database`
-      );
+        console.log(
+          `🔄 Updated existing media "${media.name}" ${sourcesChanged ? 'with updated sources' : '(sources unchanged)'}`
+        );
+      } else {
+        // Create new media
+        const mediaId = randomUUID();
+
+        mediaDatabase.addMedia({
+          id: mediaId,
+          name: media.name,
+          description: media.description,
+          thumbnailUrl: media.thumbnailUrl,
+          pageUrl: link,
+        });
+
+        const sources = mediaSources.map((source) => ({
+          id: randomUUID(),
+          mediaId: mediaId,
+          sourceName: source.source,
+          url: source.url,
+        }));
+
+        sourcesDatabase.addSources(sources);
+
+        console.log(
+          `✅ Saved new media "${media.name}" with ${sources.length} sources to database`
+        );
+      }
     } catch (error) {
-      console.error('❌ Failed to save media to database:', error);
+      console.error('❌ Failed to save/update media in database:', error);
     }
   } else {
     console.log('⚠️ Missing required data, not saving to database');
