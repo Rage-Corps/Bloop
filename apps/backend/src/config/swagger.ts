@@ -28,6 +28,10 @@ export const swaggerConfig = {
         name: 'media',
         description: 'Media management endpoints',
       },
+      {
+        name: 'scraping',
+        description: 'Web scraping endpoints',
+      },
     ],
   },
 };

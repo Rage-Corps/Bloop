@@ -21,6 +21,7 @@ const DEFAULT_HEADERS = {
 
 class ScrapingService {
   private activeJobIds: Set<string> = new Set();
+  private MAX_PAGE = 3;
 
   constructor() {
     // Initialize recovery on startup
@@ -187,7 +188,7 @@ class ScrapingService {
       await handleMediaLinks(
         filteredMediaLinks,
         env.BASE_SCRAPE_URL,
-        maxPageIndex,
+        this.MAX_PAGE ?? maxPageIndex,
         request.options?.force || false,
         jobId
       );
@@ -578,14 +579,14 @@ function getMediaSources(
 
 function getMediaLinkCategories($: cheerio.CheerioAPI): string[] {
   const categories: string[] = [];
-  
+
   $('a[rel="category"]').each((index, element) => {
     const categoryText = $(element).text().trim();
     if (categoryText) {
       categories.push(categoryText);
     }
   });
-  
+
   return categories;
 }
 

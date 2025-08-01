@@ -23,29 +23,12 @@ export async function scrapingRoutes(fastify: FastifyInstance) {
             options: {
               type: 'object',
               properties: {
-                maxDepth: {
-                  type: 'integer',
-                  minimum: 1,
-                  maximum: 5,
-                  default: 1,
-                  description: 'Maximum depth to crawl (default: 1)',
-                },
-                includeImages: {
-                  type: 'boolean',
-                  default: true,
-                  description: 'Whether to include images (default: true)',
-                },
-                includeVideos: {
-                  type: 'boolean',
-                  default: true,
-                  description: 'Whether to include videos (default: true)',
-                },
                 waitTime: {
                   type: 'integer',
                   minimum: 0,
                   maximum: 10000,
                   default: 1000,
-                  description: 'Wait time between requests in ms (default: 1000)',
+                  description: 'Wait time between requests in milliseconds (default: 1000)',
                 },
                 force: {
                   type: 'boolean',
