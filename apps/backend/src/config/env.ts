@@ -19,6 +19,10 @@ const envSchema = z.object({
     .string()
     .url('BASE_SCRAPE_URL must be a valid URL')
     .optional(),
+  AUTH_SECRET: z
+    .string()
+    .min(32, 'AUTH_SECRET must be at least 32 characters')
+    .default('your-development-secret-key-here-change-in-production'),
 });
 
 // Validate and export environment variables

@@ -52,6 +52,9 @@ export const MediaQuerySchema = z.object({
     .string()
     .optional()
     .transform((val) => (val ? parseInt(val) : undefined)),
+  source: z
+    .string()
+    .optional(),
 });
 
 // Schema for route parameters

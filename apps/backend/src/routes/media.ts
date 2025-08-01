@@ -79,7 +79,7 @@ export async function mediaRoutes(fastify: FastifyInstance) {
       let filteredMedia = media;
       if (query.source) {
         filteredMedia = media.filter((item) =>
-          item.source.toLowerCase().includes(query.source!.toLowerCase())
+          item.pageUrl.toLowerCase().includes(query.source!.toLowerCase())
         );
       }
 
@@ -222,9 +222,9 @@ export async function mediaRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       const mediaData = CreateMediaSchema.parse(request.body);
 
-      // Check if media with this uniqueId already exists
-      if (mediaDatabase.mediaExists(mediaData.uniqueId)) {
-        throw new ConflictError('Media with this uniqueId already exists');
+      // Check if media with this id already exists
+      if (mediaDatabase.mediaExists(mediaData.id)) {
+        throw new ConflictError('Media with this id already exists');
       }
 
       mediaDatabase.addMedia(mediaData);

@@ -45,7 +45,7 @@ export const JobLogSchema = z.object({
   timestamp: z.string(),
   level: z.enum(['info', 'warning', 'error']),
   message: z.string(),
-  data: z.record(z.any()).optional(),
+  data: z.record(z.string(), z.any()).optional(),
 });
 
 // Schema for job control actions

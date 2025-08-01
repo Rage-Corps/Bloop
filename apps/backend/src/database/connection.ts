@@ -111,6 +111,8 @@ class DatabaseConnection {
       )
     `);
 
+    // Better-Auth will manage its own tables automatically
+
     console.log('📊 Database tables initialized');
   }
 

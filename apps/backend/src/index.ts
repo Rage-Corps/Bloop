@@ -7,6 +7,7 @@ import {
   loggerConfig,
   swaggerConfig,
   swaggerUiConfig,
+  auth,
 } from './config/index.js';
 import { dbConnection } from './database/index.js';
 import { mediaRoutes } from './routes/media.js';
@@ -21,9 +22,24 @@ const fastify = Fastify({
 
 // Start server function
 const start = async () => {
-  // Register CORS
+  // Register CORS with Better-Auth support
   await fastify.register(cors, {
-    origin: true,
+    origin: [
+      'http://localhost:3000', // Nuxt frontend
+      'http://127.0.0.1:3000',
+      env.NODE_ENV === 'development' ? true : false
+    ].filter(Boolean),
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+      'Cookie',
+      'Set-Cookie'
+    ],
+    credentials: true, // Essential for Better-Auth cookies
   });
 
   // Register Swagger documentation
@@ -70,6 +86,79 @@ const start = async () => {
   // Register API routes
   await fastify.register(mediaRoutes, { prefix: '/api' });
   await fastify.register(scrapingRoutes, { prefix: '/api' });
+
+  // Register authentication routes
+  fastify.route({
+    method: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    url: '/api/auth/*',
+    async handler(request, reply) {
+      try {
+        // Construct request URL
+        const protocol = request.protocol || 'http';
+        const host = request.headers.host || `${env.HOST}:${env.PORT}`;
+        const url = new URL(`${protocol}://${host}${request.url}`);
+        
+        // Convert Fastify headers to standard Headers object
+        const headers = new Headers();
+        Object.entries(request.headers).forEach(([key, value]) => {
+          if (value) {
+            headers.append(key, Array.isArray(value) ? value.join(', ') : value.toString());
+          }
+        });
+
+        // Get request body as string if present
+        let body: string | undefined;
+        if (request.method !== 'GET' && request.method !== 'HEAD' && request.body) {
+          body = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
+        }
+
+        // Create Fetch API-compatible request
+        const webRequest = new Request(url.toString(), {
+          method: request.method,
+          headers,
+          body,
+        });
+
+        // Process authentication request
+        const response = await auth.handler(webRequest);
+
+        // Forward response status
+        reply.status(response.status);
+        
+        // Forward response headers
+        response.headers.forEach((value, key) => {
+          reply.header(key, value);
+        });
+
+        // Forward response body
+        const responseBody = await response.text();
+        
+        // Handle different content types
+        if (responseBody) {
+          const contentType = response.headers.get('content-type');
+          if (contentType?.includes('application/json')) {
+            try {
+              return JSON.parse(responseBody);
+            } catch {
+              return responseBody;
+            }
+          } else {
+            return responseBody;
+          }
+        }
+        
+        return null;
+
+      } catch (error) {
+        fastify.log.error('Authentication Error:', error);
+        reply.status(500);
+        return {
+          error: 'Internal authentication error',
+          code: 'AUTH_FAILURE'
+        };
+      }
+    }
+  });
 
   // Graceful shutdown
   fastify.addHook('onClose', async () => {
