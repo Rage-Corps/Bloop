@@ -45,13 +45,19 @@ export const UpdateMediaSchema = MediaSchema.partial().omit({ id: true });
 // Schema for query parameters
 export const MediaQuerySchema = z.object({
   limit: z
-    .string()
+    .union([z.string(), z.number()])
     .optional()
-    .transform((val) => (val ? parseInt(val) : undefined)),
+    .transform((val) => {
+      if (typeof val === 'string') return parseInt(val);
+      return val;
+    }),
   offset: z
-    .string()
+    .union([z.string(), z.number()])
     .optional()
-    .transform((val) => (val ? parseInt(val) : undefined)),
+    .transform((val) => {
+      if (typeof val === 'string') return parseInt(val);
+      return val;
+    }),
   source: z
     .string()
     .optional(),

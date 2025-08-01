@@ -51,12 +51,11 @@ export async function mediaRoutes(fastify: FastifyInstance) {
                 items: {
                   type: 'object',
                   properties: {
-                    uniqueId: { type: 'string' },
+                    id: { type: 'string' },
                     name: { type: 'string' },
                     description: { type: 'string' },
-                    url: { type: 'string' },
-                    source: { type: 'string' },
-                    thumbnail: { type: 'string' },
+                    thumbnailUrl: { type: 'string' },
+                    pageUrl: { type: 'string' },
                     categories: { 
                       type: 'array',
                       items: { type: 'string' }
@@ -117,12 +116,11 @@ export async function mediaRoutes(fastify: FastifyInstance) {
           200: {
             type: 'object',
             properties: {
-              uniqueId: { type: 'string' },
+              id: { type: 'string' },
               name: { type: 'string' },
               description: { type: 'string' },
-              url: { type: 'string' },
-              source: { type: 'string' },
-              thumbnail: { type: 'string' },
+              thumbnailUrl: { type: 'string' },
+              pageUrl: { type: 'string' },
               categories: { 
                 type: 'array',
                 items: { type: 'string' }

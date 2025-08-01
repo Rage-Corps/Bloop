@@ -1,122 +1,263 @@
 <template>
   <div>
-    <!-- Welcome Section -->
-    <div class="mb-8">
-      <UCard>
-        <template #header>
-          <div class="flex items-center justify-between">
-            <div>
-              <h2 class="text-2xl font-bold text-gray-900">
-                Welcome back, {{ user?.name?.split(' ')[0] || 'there' }}! 🎉
-              </h2>
-              <p class="text-gray-600 mt-1">
-                Ready to dive into your digital treasure trove?
-              </p>
-            </div>
-          </div>
-        </template>
+    <!-- Media Grid Header -->
+    <div class="flex justify-between items-center mb-6">
+      <div>
+        <h2 class="text-2xl font-bold text-white">Your Media Library 📚</h2>
+        <p class="text-gray-400 mt-1">
+          {{ mediaData?.total || 0 }} items in your collection
+        </p>
+      </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <UCard>
-            <div class="text-center p-4">
-              <div class="text-3xl mb-2">📊</div>
-              <h3 class="font-semibold text-gray-900">Analytics</h3>
-              <p class="text-sm text-gray-600 mt-1">View your stats</p>
-            </div>
-          </UCard>
-
-          <UCard>
-            <div class="text-center p-4">
-              <div class="text-3xl mb-2">🔍</div>
-              <h3 class="font-semibold text-gray-900">Search</h3>
-              <p class="text-sm text-gray-600 mt-1">Find your content</p>
-            </div>
-          </UCard>
-
-          <UCard>
-            <div class="text-center p-4">
-              <div class="text-3xl mb-2">⚙️</div>
-              <h3 class="font-semibold text-gray-900">Settings</h3>
-              <p class="text-sm text-gray-600 mt-1">Configure Bloop</p>
-            </div>
-          </UCard>
-        </div>
-      </UCard>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="mb-8">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Search and Filters -->
+      <div class="flex space-x-3">
+        <UInput
+          v-model="searchQuery"
+          placeholder="Search media..."
+          icon="i-heroicons-magnifying-glass"
+          size="md"
+          @input="debouncedSearch"
+        />
         <UButton
           color="primary"
           variant="soft"
-          size="lg"
-          icon="i-heroicons-plus"
-          class="justify-start"
+          icon="i-heroicons-arrow-path"
+          :loading="loading"
+          @click="refreshMedia"
         >
-          Add Content
-        </UButton>
-        
-        <UButton
-          color="gray"
-          variant="soft"
-          size="lg"
-          icon="i-heroicons-magnifying-glass"
-          class="justify-start"
-        >
-          Search Library
-        </UButton>
-        
-        <UButton
-          color="green"
-          variant="soft"
-          size="lg"
-          icon="i-heroicons-arrow-down-tray"
-          class="justify-start"
-        >
-          Import Data
-        </UButton>
-        
-        <UButton
-          color="blue"
-          variant="soft" 
-          size="lg"
-          icon="i-heroicons-chart-bar"
-          class="justify-start"
-        >
-          View Reports
+          Refresh
         </UButton>
       </div>
     </div>
 
-    <!-- Recent Activity -->
-    <div>
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-      <UCard>
-        <div class="text-center py-12">
-          <div class="text-6xl mb-4">🌊</div>
-          <h4 class="text-xl font-semibold text-gray-900 mb-2">
-            Your Bloop adventure starts here!
-          </h4>
-          <p class="text-gray-600 mb-6">
-            No activity yet, but that's about to change. Start exploring!
-          </p>
-          <UButton color="primary" size="lg">
-            Get Started
-          </UButton>
-        </div>
-      </UCard>
+    <!-- Loading State -->
+    <div v-if="loading && !mediaData" class="text-center py-12">
+      <UIcon
+        name="i-heroicons-arrow-path"
+        class="animate-spin text-4xl text-primary mb-4"
+      />
+      <p class="text-gray-400">Loading your media...</p>
     </div>
+
+    <!-- Error State -->
+    <UAlert
+      v-else-if="error"
+      color="error"
+      variant="soft"
+      :title="error"
+      class="mb-6"
+    />
+
+    <!-- Empty State -->
+    <div
+      v-else-if="mediaData && mediaData.data.length === 0"
+      class="text-center py-16"
+    >
+      <div class="text-6xl mb-4">🌊</div>
+      <h3 class="text-xl font-semibold text-white mb-2">No media found</h3>
+      <p class="text-gray-400 mb-6">
+        {{
+          searchQuery
+            ? 'Try adjusting your search terms'
+            : 'Start by adding some media to your collection'
+        }}
+      </p>
+    </div>
+
+    <!-- Media Grid -->
+    <div v-else-if="mediaData" class="space-y-6">
+      <div
+        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
+      >
+        <UCard
+          v-for="item in mediaData.data"
+          :key="item.id"
+          class="group hover:shadow-lg transition-all duration-200 cursor-pointer"
+          @click="openMediaDetail(item)"
+        >
+          <!-- Thumbnail -->
+          <div class="aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden mb-3">
+            <img
+              :src="item.thumbnailUrl"
+              :alt="item.name"
+              class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
+              @error="handleImageError"
+            />
+          </div>
+
+          <!-- Media Info -->
+          <div class="space-y-2">
+            <h3
+              class="font-semibold text-white text-sm line-clamp-2 group-hover:text-primary transition-colors"
+            >
+              {{ item.name }}
+            </h3>
+
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-gray-500 text-xs">
+                {{ item.categories?.length || 0 }} tags
+              </span>
+            </div>
+
+            <!-- Categories -->
+            <div v-if="item.categories?.length" class="flex flex-wrap gap-1">
+              <UBadge
+                v-for="category in item.categories.slice(0, 2)"
+                :key="category"
+                color="primary"
+                variant="soft"
+                size="xs"
+              >
+                {{ category }}
+              </UBadge>
+              <UBadge
+                v-if="item.categories.length > 2"
+                color="info"
+                variant="soft"
+                size="xs"
+              >
+                +{{ item.categories.length - 2 }}
+              </UBadge>
+            </div>
+          </div>
+        </UCard>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex justify-center mt-8">
+        <UPagination
+          v-model="currentPage"
+          :page-count="itemsPerPage"
+          :total="mediaData.total"
+          :max="5"
+          show-last
+          show-first
+        />
+      </div>
+    </div>
+
+    <!-- Media Detail Modal -->
+    <UModal v-model="showMediaDetail">
+      <div v-if="selectedMedia" class="p-6">
+        <div class="flex justify-between items-start mb-4">
+          <h3 class="text-xl font-semibold text-white">
+            {{ selectedMedia.name }}
+          </h3>
+          <UButton
+            color="info"
+            variant="ghost"
+            icon="i-heroicons-x-mark"
+            @click="showMediaDetail = false"
+          />
+        </div>
+
+        <div class="space-y-4">
+          <img
+            :src="selectedMedia.thumbnail"
+            :alt="selectedMedia.name"
+            class="w-full max-h-64 object-cover rounded-lg"
+          />
+
+          <p class="text-gray-300">{{ selectedMedia.description }}</p>
+
+          <div class="flex flex-wrap gap-2">
+            <UBadge
+              v-for="category in selectedMedia.categories"
+              :key="category"
+              color="primary"
+              variant="soft"
+            >
+              {{ category }}
+            </UBadge>
+          </div>
+
+          <div class="flex justify-end space-x-2 pt-4">
+            <UButton
+              :to="selectedMedia.pageUrl"
+              external
+              color="primary"
+              icon="i-heroicons-arrow-top-right-on-square"
+            >
+              View Original
+            </UButton>
+          </div>
+        </div>
+      </div>
+    </UModal>
   </div>
 </template>
 
 <script setup lang="ts">
+import { debounce } from 'lodash-es';
+
 // Use the dashboard layout
 definePageMeta({
   layout: 'dashboard',
-  middleware: 'auth'
+  middleware: 'auth',
 });
 
-const { user } = useAuth();
+const { fetchMedia, loading, error } = useMedia();
+
+// Reactive data
+const mediaData = ref<any>(null);
+const currentPage = ref(1);
+const itemsPerPage = 20;
+const searchQuery = ref('');
+const showMediaDetail = ref(false);
+const selectedMedia = ref<any>(null);
+
+// Computed
+const offset = computed(() => (currentPage.value - 1) * itemsPerPage);
+
+// Methods
+const loadMedia = async () => {
+  try {
+    const response = await fetchMedia({
+      limit: itemsPerPage,
+      offset: offset.value,
+      source: searchQuery.value || undefined,
+    });
+    mediaData.value = response;
+  } catch (err) {
+    console.error('Failed to load media:', err);
+  }
+};
+
+const refreshMedia = () => {
+  currentPage.value = 1;
+  loadMedia();
+};
+
+const debouncedSearch = debounce(() => {
+  currentPage.value = 1;
+  loadMedia();
+}, 500);
+
+const openMediaDetail = (item: any) => {
+  selectedMedia.value = item;
+  showMediaDetail.value = true;
+};
+
+const handleImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement;
+  img.src =
+    'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMiAxNkM5Ljc5IDE2IDggMTQuMjEgOCAxMlMxMC43OSA4IDEyIDhTMTYgOS43OSAxNiAxMlMxNC4yMSAxNiAxMiAxNloiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+';
+};
+
+// Watchers
+watch(currentPage, loadMedia);
+
+// Lifecycle
+onMounted(() => {
+  loadMedia();
+});
 </script>
+
+<style scoped>
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>
