@@ -1,4 +1,5 @@
 import { signIn, signUp, signOut, useSession } from '~/lib/auth-client';
+import { computed } from 'vue';
 
 export const useAuth = () => {
   const session = useSession();
@@ -17,13 +18,15 @@ export const useAuth = () => {
         callbackURL: '/dashboard', // Where to redirect after login
       });
 
-      if (rememberMe) {
-        // For "keep me logged in", we can set longer-lived sessions
-        // This can be handled by updating the session configuration
-        // or by using localStorage to persist user preferences
-        localStorage.setItem('rememberMe', 'true');
-      } else {
-        localStorage.removeItem('rememberMe');
+      if (typeof window !== 'undefined') {
+        if (rememberMe) {
+          // For "keep me logged in", we can set longer-lived sessions
+          // This can be handled by updating the session configuration
+          // or by using localStorage to persist user preferences
+          localStorage.setItem('rememberMe', 'true');
+        } else {
+          localStorage.removeItem('rememberMe');
+        }
       }
 
       return result;
@@ -50,10 +53,11 @@ export const useAuth = () => {
 
   const logout = async () => {
     try {
-      localStorage.removeItem('rememberMe');
-      await signOut({
-        callbackURL: '/login',
-      });
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('rememberMe');
+      }
+      await signOut();
+      await navigateTo('/login');
     } catch (error) {
       console.error('Logout error:', error);
       throw error;
@@ -61,7 +65,10 @@ export const useAuth = () => {
   };
 
   const isRememberMeEnabled = () => {
-    return localStorage.getItem('rememberMe') === 'true';
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('rememberMe') === 'true';
+    }
+    return false;
   };
 
   return {
@@ -70,7 +77,7 @@ export const useAuth = () => {
     register,
     logout,
     isRememberMeEnabled,
-    isLoggedIn: computed(() => !!session.data?.user),
-    user: computed(() => session.data?.user),
+    isLoggedIn: computed(() => !!session.value.data?.user),
+    user: computed(() => session.value.data?.user),
   };
 };
