@@ -57,6 +57,10 @@ export async function mediaRoutes(fastify: FastifyInstance) {
                     url: { type: 'string' },
                     source: { type: 'string' },
                     thumbnail: { type: 'string' },
+                    categories: { 
+                      type: 'array',
+                      items: { type: 'string' }
+                    },
                   },
                 },
               },
@@ -119,6 +123,10 @@ export async function mediaRoutes(fastify: FastifyInstance) {
               url: { type: 'string' },
               source: { type: 'string' },
               thumbnail: { type: 'string' },
+              categories: { 
+                type: 'array',
+                items: { type: 'string' }
+              },
             },
           },
           404: {
@@ -164,6 +172,11 @@ export async function mediaRoutes(fastify: FastifyInstance) {
             url: { type: 'string', format: 'uri', maxLength: 500 },
             source: { type: 'string', maxLength: 100 },
             thumbnail: { type: 'string', format: 'uri', maxLength: 500 },
+            categories: { 
+              type: 'array',
+              items: { type: 'string', maxLength: 50 },
+              description: 'Array of category names for the media item'
+            },
           },
           required: [
             'uniqueId',
@@ -188,6 +201,10 @@ export async function mediaRoutes(fastify: FastifyInstance) {
                   url: { type: 'string' },
                   source: { type: 'string' },
                   thumbnail: { type: 'string' },
+                  categories: { 
+                    type: 'array',
+                    items: { type: 'string' }
+                  },
                 },
               },
             },
@@ -258,6 +275,10 @@ export async function mediaRoutes(fastify: FastifyInstance) {
                   url: { type: 'string' },
                   source: { type: 'string' },
                   thumbnail: { type: 'string' },
+                  categories: { 
+                    type: 'array',
+                    items: { type: 'string' }
+                  },
                 },
               },
             },

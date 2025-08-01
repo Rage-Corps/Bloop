@@ -28,6 +28,12 @@ export const MediaSchema = z.object({
     .string()
     .url('pageUrl must be a valid URL')
     .max(500, 'pageUrl must be less than 500 characters'),
+
+  categories: z
+    .array(z.string().min(1).max(50))
+    .optional()
+    .default([])
+    .transform((categories) => categories || []),
 });
 
 // Schema for creating media (all fields required)

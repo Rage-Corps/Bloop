@@ -4,6 +4,7 @@ import { env } from '../config/index.js';
 import type { StartScraping, ScrapingJob } from '../schemas/scraping.js';
 import { mediaDatabase } from '../database/media.js';
 import { sourcesDatabase } from '../database/sources.js';
+import { categoriesDatabase } from '../database/categories.js';
 import { jobsDatabase } from '../database/jobs.js';
 
 // Common HTTP headers for web scraping
@@ -461,10 +462,11 @@ async function processLink(
       description: mediaInfo?.description,
       thumbnailUrl: thumbnailNameResult?.thumbnailUrl,
       sources: mediaSources,
+      categories: mediaCategories,
     };
 
     // Store to database if we have the required data
-    storeMedia(media, mediaSources, link);
+    storeMedia(media, mediaSources, mediaCategories, link);
 
     // Update progress
     if (jobId) {
@@ -486,8 +488,10 @@ function storeMedia(
     description: string | undefined;
     thumbnailUrl: string | undefined;
     sources: { source: string; url: string }[];
+    categories: string[];
   },
   mediaSources: { source: string; url: string }[],
+  mediaCategories: string[],
   link: string
 ) {
   if (
@@ -534,8 +538,21 @@ function storeMedia(
           sourcesDatabase.addSources(sources);
         }
 
+        // Check if categories changed
+        const existingCategories = categoriesDatabase.getCategoryNamesByMediaId(existingMedia.id);
+        const categoriesChanged = existingCategories.length !== mediaCategories.length ||
+          !mediaCategories.every(category => existingCategories.includes(category));
+
+        if (categoriesChanged) {
+          // Update categories
+          categoriesDatabase.deleteCategoriesByMediaId(existingMedia.id);
+          if (mediaCategories.length > 0) {
+            categoriesDatabase.addCategories(mediaCategories, existingMedia.id);
+          }
+        }
+
         console.log(
-          `🔄 Updated existing media "${media.name}" ${sourcesChanged ? 'with updated sources' : '(sources unchanged)'}`
+          `🔄 Updated existing media "${media.name}" ${sourcesChanged ? 'with updated sources' : '(sources unchanged)'} ${categoriesChanged ? 'with updated categories' : '(categories unchanged)'}`
         );
       } else {
         // Create new media
@@ -547,6 +564,7 @@ function storeMedia(
           description: media.description,
           thumbnailUrl: media.thumbnailUrl,
           pageUrl: link,
+          categories: [], // Will be populated separately
         });
 
         const sources = mediaSources.map((source) => ({
@@ -558,8 +576,13 @@ function storeMedia(
 
         sourcesDatabase.addSources(sources);
 
+        // Add categories if any
+        if (mediaCategories.length > 0) {
+          categoriesDatabase.addCategories(mediaCategories, mediaId);
+        }
+
         console.log(
-          `✅ Saved new media "${media.name}" with ${sources.length} sources to database`
+          `✅ Saved new media "${media.name}" with ${sources.length} sources and ${mediaCategories.length} categories to database`
         );
       }
     } catch (error) {

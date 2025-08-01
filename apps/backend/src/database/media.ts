@@ -1,5 +1,6 @@
 import { db } from './connection.js';
 import type { Media } from '../schemas/media.js';
+import { categoriesDatabase } from './categories.js';
 
 class MediaDatabase {
   constructor() {
@@ -11,7 +12,13 @@ class MediaDatabase {
     const stmt = db.prepare(
       'SELECT id, name, description, thumbnailUrl, pageUrl FROM media ORDER BY created_at DESC'
     );
-    return stmt.all() as Media[];
+    const media = stmt.all() as Media[];
+    
+    // Add categories to each media item
+    return media.map(item => ({
+      ...item,
+      categories: categoriesDatabase.getCategoryNamesByMediaId(item.id)
+    }));
   }
 
   // Get media by id
@@ -19,7 +26,16 @@ class MediaDatabase {
     const stmt = db.prepare(
       'SELECT id, name, description, thumbnailUrl, pageUrl FROM media WHERE id = ?'
     );
-    return stmt.get(id) as Media | undefined;
+    const media = stmt.get(id) as Media | undefined;
+    
+    if (media) {
+      return {
+        ...media,
+        categories: categoriesDatabase.getCategoryNamesByMediaId(media.id)
+      };
+    }
+    
+    return undefined;
   }
 
   // Add new media
@@ -78,7 +94,16 @@ class MediaDatabase {
     const stmt = db.prepare(
       'SELECT id, name, description, thumbnailUrl, pageUrl FROM media WHERE pageUrl = ?'
     );
-    return stmt.get(pageUrl) as Media | undefined;
+    const media = stmt.get(pageUrl) as Media | undefined;
+    
+    if (media) {
+      return {
+        ...media,
+        categories: categoriesDatabase.getCategoryNamesByMediaId(media.id)
+      };
+    }
+    
+    return undefined;
   }
 }
 

@@ -58,6 +58,17 @@ class DatabaseConnection {
       )
     `);
 
+    // Create categories table if it doesn't exist
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id TEXT PRIMARY KEY,
+        mediaId TEXT NOT NULL,
+        category TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (mediaId) REFERENCES media (id) ON DELETE CASCADE
+      )
+    `);
+
     // Create scraping_jobs table for persistent job management
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS scraping_jobs (
