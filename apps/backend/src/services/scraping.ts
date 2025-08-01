@@ -51,7 +51,9 @@ class ScrapingService {
     // Start the scraping process asynchronously
     this.executeScraping(job.id, request).catch((error) => {
       jobsDatabase.updateJobStatus(job.id, 'failed', error.message);
-      jobsDatabase.logActivity(job.id, 'error', 'Job failed', { error: error.message });
+      jobsDatabase.logActivity(job.id, 'error', 'Job failed', {
+        error: error.message,
+      });
       this.activeJobIds.delete(job.id);
     });
 
@@ -90,11 +92,13 @@ class ScrapingService {
 
     jobsDatabase.updateJobStatus(jobId, 'running');
     jobsDatabase.logActivity(jobId, 'info', 'Job resumed by user');
-    
+
     // Resume execution from where it left off
     this.resumeScraping(jobId).catch((error) => {
       jobsDatabase.updateJobStatus(jobId, 'failed', error.message);
-      jobsDatabase.logActivity(jobId, 'error', 'Job failed on resume', { error: error.message });
+      jobsDatabase.logActivity(jobId, 'error', 'Job failed on resume', {
+        error: error.message,
+      });
       this.activeJobIds.delete(jobId);
     });
 
@@ -121,8 +125,16 @@ class ScrapingService {
     if (!job) return;
 
     if (!env.BASE_SCRAPE_URL) {
-      jobsDatabase.updateJobStatus(jobId, 'failed', 'BASE_SCRAPE_URL environment variable is not configured');
-      jobsDatabase.logActivity(jobId, 'error', 'BASE_SCRAPE_URL not configured');
+      jobsDatabase.updateJobStatus(
+        jobId,
+        'failed',
+        'BASE_SCRAPE_URL environment variable is not configured'
+      );
+      jobsDatabase.logActivity(
+        jobId,
+        'error',
+        'BASE_SCRAPE_URL not configured'
+      );
       return;
     }
 
@@ -131,7 +143,11 @@ class ScrapingService {
       jobsDatabase.updateJobStatus(jobId, 'running');
       this.activeJobIds.add(jobId);
 
-      jobsDatabase.logActivity(jobId, 'info', `Starting scraping job for URL: ${env.BASE_SCRAPE_URL}`);
+      jobsDatabase.logActivity(
+        jobId,
+        'info',
+        `Starting scraping job for URL: ${env.BASE_SCRAPE_URL}`
+      );
 
       // Fetch and extract links
       const html = await this.fetchPageHTML(env.BASE_SCRAPE_URL);
@@ -148,11 +164,16 @@ class ScrapingService {
         linksTotal: filteredMediaLinks.length,
       });
 
-      jobsDatabase.logActivity(jobId, 'info', `Found ${filteredMediaLinks.length} media links across ${maxPageIndex} pages`, {
-        title,
-        totalLinks: links.length,
-        maxPages: maxPageIndex,
-      });
+      jobsDatabase.logActivity(
+        jobId,
+        'info',
+        `Found ${filteredMediaLinks.length} media links across ${maxPageIndex} pages`,
+        {
+          title,
+          totalLinks: links.length,
+          maxPages: maxPageIndex,
+        }
+      );
 
       console.log(`Page title: ${title}`);
       console.log(`Found ${links.length} links`);
@@ -181,7 +202,9 @@ class ScrapingService {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error occurred';
       jobsDatabase.updateJobStatus(jobId, 'failed', errorMessage);
-      jobsDatabase.logActivity(jobId, 'error', 'Job failed', { error: errorMessage });
+      jobsDatabase.logActivity(jobId, 'error', 'Job failed', {
+        error: errorMessage,
+      });
       console.error(`Scraping job ${jobId} failed:`, errorMessage);
     } finally {
       this.activeJobIds.delete(jobId);
@@ -191,16 +214,26 @@ class ScrapingService {
   // Recovery methods
   private async initializeRecovery(): Promise<void> {
     const activeJobs = jobsDatabase.getActiveJobs();
-    
+
     for (const job of activeJobs) {
       if (job.status === 'running') {
         // Mark interrupted jobs as paused
-        jobsDatabase.updateJobStatus(job.id, 'paused', 'Server restart - job was running');
-        jobsDatabase.logActivity(job.id, 'warning', 'Job paused due to server restart');
+        jobsDatabase.updateJobStatus(
+          job.id,
+          'paused',
+          'Server restart - job was running'
+        );
+        jobsDatabase.logActivity(
+          job.id,
+          'warning',
+          'Job paused due to server restart'
+        );
       }
     }
-    
-    console.log(`📊 Recovery: Found ${activeJobs.length} active jobs, marked running jobs as paused`);
+
+    console.log(
+      `📊 Recovery: Found ${activeJobs.length} active jobs, marked running jobs as paused`
+    );
   }
 
   private async resumeScraping(jobId: string): Promise<void> {
@@ -299,14 +332,20 @@ async function handleMediaLinks(
 
   if (!force) {
     // Check if all links from first page already exist
-    const firstPageExistingCount = mediaLinks.filter(link => mediaDatabase.pageUrlExists(link)).length;
-    
+    const firstPageExistingCount = mediaLinks.filter((link) =>
+      mediaDatabase.pageUrlExists(link)
+    ).length;
+
     if (firstPageExistingCount === mediaLinks.length) {
-      console.log(`🛑 All ${mediaLinks.length} links from first page already exist in database - skipping all processing`);
+      console.log(
+        `🛑 All ${mediaLinks.length} links from first page already exist in database - skipping all processing`
+      );
       return;
     }
-    
-    console.log(`📊 ${firstPageExistingCount}/${mediaLinks.length} links already exist in database`);
+
+    console.log(
+      `📊 ${firstPageExistingCount}/${mediaLinks.length} links already exist in database`
+    );
   } else {
     console.log(`⚡ Force mode enabled - bypassing early termination checks`);
   }
@@ -330,13 +369,19 @@ async function handleMediaLinks(
       if (jobId) {
         jobsDatabase.updateJobProgress(jobId, { currentPage: pageIndex });
       }
-      
+
       const shouldStop = await processPage(pageIndex, baseUrl, force, jobId);
-      
+
       if (!force && shouldStop) {
-        console.log(`🛑 Stopping page processing at page ${pageIndex} - all links already exist`);
+        console.log(
+          `🛑 Stopping page processing at page ${pageIndex} - all links already exist`
+        );
         if (jobId) {
-          jobsDatabase.logActivity(jobId, 'info', `Early termination at page ${pageIndex} - all links already exist`);
+          jobsDatabase.logActivity(
+            jobId,
+            'info',
+            `Early termination at page ${pageIndex} - all links already exist`
+          );
         }
         break;
       }
@@ -346,18 +391,22 @@ async function handleMediaLinks(
   console.log(`\n=== Finished Processing All Pages ===`);
 }
 
-async function processLink(link: string, force: boolean = false, jobId?: string) {
+async function processLink(
+  link: string,
+  force: boolean = false,
+  jobId?: string
+) {
   try {
     // Check if link already exists in database (unless force mode is enabled)
     if (!force && mediaDatabase.pageUrlExists(link)) {
       console.log(`⏭️ Skipped ${link} - already exists in database`);
-      
+
       // Update progress
       if (jobId) {
         const job = jobsDatabase.getJobById(jobId);
         if (job) {
-          jobsDatabase.updateJobProgress(jobId, { 
-            linksSkipped: job.linksSkipped + 1 
+          jobsDatabase.updateJobProgress(jobId, {
+            linksSkipped: job.linksSkipped + 1,
           });
         }
       }
@@ -380,6 +429,14 @@ async function processLink(link: string, force: boolean = false, jobId?: string)
     }
 
     const mediaInfo = getMediaLinkInfo($);
+
+    const mediaCategories = getMediaLinkCategories($);
+
+    if (mediaCategories.length > 0) {
+      console.log(`Categories: ${mediaCategories.join(', ')}`);
+    } else {
+      console.log('No categories found');
+    }
 
     if (mediaInfo) {
       console.log(`Description: ${mediaInfo.description}`);
@@ -407,13 +464,13 @@ async function processLink(link: string, force: boolean = false, jobId?: string)
 
     // Store to database if we have the required data
     storeMedia(media, mediaSources, link);
-    
+
     // Update progress
     if (jobId) {
       const job = jobsDatabase.getJobById(jobId);
       if (job) {
-        jobsDatabase.updateJobProgress(jobId, { 
-          linksProcessed: job.linksProcessed + 1 
+        jobsDatabase.updateJobProgress(jobId, {
+          linksProcessed: job.linksProcessed + 1,
         });
       }
     }
@@ -519,6 +576,19 @@ function getMediaSources(
   return sources;
 }
 
+function getMediaLinkCategories($: cheerio.CheerioAPI): string[] {
+  const categories: string[] = [];
+  
+  $('a[rel="category"]').each((index, element) => {
+    const categoryText = $(element).text().trim();
+    if (categoryText) {
+      categories.push(categoryText);
+    }
+  });
+  
+  return categories;
+}
+
 // Utility Functions
 
 async function fetchPageHTML(url: string): Promise<string> {
@@ -569,7 +639,12 @@ async function fetchAndExtractLinks(
   }
 }
 
-async function processPage(pageIndex: number, baseUrl: string, force: boolean = false, jobId?: string): Promise<boolean> {
+async function processPage(
+  pageIndex: number,
+  baseUrl: string,
+  force: boolean = false,
+  jobId?: string
+): Promise<boolean> {
   const pageUrl = `${baseUrl}page/${pageIndex}`;
   console.log(`\nFetching page ${pageIndex}: ${pageUrl}`);
 
@@ -581,14 +656,20 @@ async function processPage(pageIndex: number, baseUrl: string, force: boolean = 
   if (!force) {
     // Check if all links already exist
     if (pageMediaLinks.length > 0) {
-      const existingCount = pageMediaLinks.filter(link => mediaDatabase.pageUrlExists(link)).length;
-      
+      const existingCount = pageMediaLinks.filter((link) =>
+        mediaDatabase.pageUrlExists(link)
+      ).length;
+
       if (existingCount === pageMediaLinks.length) {
-        console.log(`🛑 All ${pageMediaLinks.length} links from page ${pageIndex} already exist - stopping further page processing`);
+        console.log(
+          `🛑 All ${pageMediaLinks.length} links from page ${pageIndex} already exist - stopping further page processing`
+        );
         return true; // Signal to stop processing further pages
       }
-      
-      console.log(`📊 ${existingCount}/${pageMediaLinks.length} links already exist on page ${pageIndex}`);
+
+      console.log(
+        `📊 ${existingCount}/${pageMediaLinks.length} links already exist on page ${pageIndex}`
+      );
     }
   }
 
@@ -596,6 +677,6 @@ async function processPage(pageIndex: number, baseUrl: string, force: boolean = 
   for (const link of pageMediaLinks) {
     await processLink(link, force, jobId);
   }
-  
+
   return false; // Continue processing pages
 }
