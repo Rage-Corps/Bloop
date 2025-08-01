@@ -1,53 +1,122 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <nav class="bg-white shadow">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center">
-            <h1 class="text-xl font-semibold text-gray-900">Dashboard</h1>
+  <div>
+    <!-- Welcome Section -->
+    <div class="mb-8">
+      <UCard>
+        <template #header>
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-2xl font-bold text-gray-900">
+                Welcome back, {{ user?.name?.split(' ')[0] || 'there' }}! 🎉
+              </h2>
+              <p class="text-gray-600 mt-1">
+                Ready to dive into your digital treasure trove?
+              </p>
+            </div>
           </div>
-          <div class="flex items-center space-x-4">
-            <span class="text-sm text-gray-700">Welcome, {{ user?.name || user?.email }}!</span>
-            <button
-              @click="handleLogout"
-              class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm font-medium"
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-      </div>
-    </nav>
+        </template>
 
-    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-      <div class="px-4 py-6 sm:px-0">
-        <div class="border-4 border-dashed border-gray-200 rounded-lg h-96 flex items-center justify-center">
-          <div class="text-center">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Welcome to your Dashboard!</h2>
-            <p class="text-gray-600">You are successfully logged in.</p>
-            <p class="text-sm text-gray-500 mt-2">
-              Remember me: {{ isRememberMeEnabled() ? 'Enabled' : 'Disabled' }}
-            </p>
-          </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <UCard>
+            <div class="text-center p-4">
+              <div class="text-3xl mb-2">📊</div>
+              <h3 class="font-semibold text-gray-900">Analytics</h3>
+              <p class="text-sm text-gray-600 mt-1">View your stats</p>
+            </div>
+          </UCard>
+
+          <UCard>
+            <div class="text-center p-4">
+              <div class="text-3xl mb-2">🔍</div>
+              <h3 class="font-semibold text-gray-900">Search</h3>
+              <p class="text-sm text-gray-600 mt-1">Find your content</p>
+            </div>
+          </UCard>
+
+          <UCard>
+            <div class="text-center p-4">
+              <div class="text-3xl mb-2">⚙️</div>
+              <h3 class="font-semibold text-gray-900">Settings</h3>
+              <p class="text-sm text-gray-600 mt-1">Configure Bloop</p>
+            </div>
+          </UCard>
         </div>
+      </UCard>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mb-8">
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <UButton
+          color="primary"
+          variant="soft"
+          size="lg"
+          icon="i-heroicons-plus"
+          class="justify-start"
+        >
+          Add Content
+        </UButton>
+        
+        <UButton
+          color="gray"
+          variant="soft"
+          size="lg"
+          icon="i-heroicons-magnifying-glass"
+          class="justify-start"
+        >
+          Search Library
+        </UButton>
+        
+        <UButton
+          color="green"
+          variant="soft"
+          size="lg"
+          icon="i-heroicons-arrow-down-tray"
+          class="justify-start"
+        >
+          Import Data
+        </UButton>
+        
+        <UButton
+          color="blue"
+          variant="soft" 
+          size="lg"
+          icon="i-heroicons-chart-bar"
+          class="justify-start"
+        >
+          View Reports
+        </UButton>
       </div>
-    </main>
+    </div>
+
+    <!-- Recent Activity -->
+    <div>
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+      <UCard>
+        <div class="text-center py-12">
+          <div class="text-6xl mb-4">🌊</div>
+          <h4 class="text-xl font-semibold text-gray-900 mb-2">
+            Your Bloop adventure starts here!
+          </h4>
+          <p class="text-gray-600 mb-6">
+            No activity yet, but that's about to change. Start exploring!
+          </p>
+          <UButton color="primary" size="lg">
+            Get Started
+          </UButton>
+        </div>
+      </UCard>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-// Protect this page - redirect to login if not authenticated
+// Use the dashboard layout
 definePageMeta({
+  layout: 'dashboard',
   middleware: 'auth'
-})
+});
 
-const { logout, user, isRememberMeEnabled } = useAuth()
-
-const handleLogout = async () => {
-  try {
-    await logout()
-  } catch (error) {
-    console.error('Logout error:', error)
-  }
-}
+const { user } = useAuth();
 </script>
