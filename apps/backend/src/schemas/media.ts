@@ -2,14 +2,10 @@ import { z } from 'zod';
 
 // Base media schema
 export const MediaSchema = z.object({
-  uniqueId: z
+  id: z
     .string()
-    .min(1, 'uniqueId is required')
-    .max(100, 'uniqueId must be less than 100 characters')
-    .regex(
-      /^[a-zA-Z0-9_-]+$/,
-      'uniqueId can only contain letters, numbers, underscores, and hyphens'
-    ),
+    .min(1, 'id is required')
+    .max(100, 'id must be less than 100 characters'),
 
   name: z
     .string()
@@ -23,28 +19,22 @@ export const MediaSchema = z.object({
     .max(1000, 'description must be less than 1000 characters')
     .trim(),
 
-  url: z
+  thumbnailUrl: z
     .string()
-    .url('url must be a valid URL')
-    .max(500, 'url must be less than 500 characters'),
+    .url('thumbnailUrl must be a valid URL')
+    .max(500, 'thumbnailUrl must be less than 500 characters'),
 
-  source: z
+  pageUrl: z
     .string()
-    .min(1, 'source is required')
-    .max(100, 'source must be less than 100 characters')
-    .trim(),
-
-  thumbnail: z
-    .string()
-    .url('thumbnail must be a valid URL')
-    .max(500, 'thumbnail must be less than 500 characters'),
+    .url('pageUrl must be a valid URL')
+    .max(500, 'pageUrl must be less than 500 characters'),
 });
 
 // Schema for creating media (all fields required)
 export const CreateMediaSchema = MediaSchema;
 
-// Schema for updating media (all fields optional except uniqueId is omitted)
-export const UpdateMediaSchema = MediaSchema.partial().omit({ uniqueId: true });
+// Schema for updating media (all fields optional except id is omitted)
+export const UpdateMediaSchema = MediaSchema.partial().omit({ id: true });
 
 // Schema for query parameters
 export const MediaQuerySchema = z.object({
@@ -56,7 +46,6 @@ export const MediaQuerySchema = z.object({
     .string()
     .optional()
     .transform((val) => (val ? parseInt(val) : undefined)),
-  source: z.string().optional(),
 });
 
 // Schema for route parameters

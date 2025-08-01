@@ -1,1 +1,9 @@
 node_modules
+/database.db
+apps/backend/data/database.db
+*.db
+*.sqlite
+*.sqlite3
+apps/frontend/data/
+apps/frontend/auth.db
+.claude

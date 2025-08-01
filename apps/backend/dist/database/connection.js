@@ -2,40 +2,32 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import { env } from '../config/index.js';
-
 class DatabaseConnection {
-  private static instance: DatabaseConnection;
-  private db: Database.Database;
-
-  private constructor() {
-    const dbPath = path.resolve(env.DATABASE_PATH);
-
-    // Ensure the data directory exists
-    const dbDir = path.dirname(dbPath);
-    if (!fs.existsSync(dbDir)) {
-      fs.mkdirSync(dbDir, { recursive: true });
+    static instance;
+    db;
+    constructor() {
+        const dbPath = path.resolve(env.DATABASE_PATH);
+        // Ensure the data directory exists
+        const dbDir = path.dirname(dbPath);
+        if (!fs.existsSync(dbDir)) {
+            fs.mkdirSync(dbDir, { recursive: true });
+        }
+        this.db = new Database(dbPath);
+        this.initTables();
+        console.log(`📊 Database connected: ${dbPath}`);
     }
-
-    this.db = new Database(dbPath);
-    this.initTables();
-
-    console.log(`📊 Database connected: ${dbPath}`);
-  }
-
-  public static getInstance(): DatabaseConnection {
-    if (!DatabaseConnection.instance) {
-      DatabaseConnection.instance = new DatabaseConnection();
+    static getInstance() {
+        if (!DatabaseConnection.instance) {
+            DatabaseConnection.instance = new DatabaseConnection();
+        }
+        return DatabaseConnection.instance;
     }
-    return DatabaseConnection.instance;
-  }
-
-  public getDatabase(): Database.Database {
-    return this.db;
-  }
-
-  private initTables() {
-    // Create media table if it doesn't exist
-    this.db.exec(`
+    getDatabase() {
+        return this.db;
+    }
+    initTables() {
+        // Create media table if it doesn't exist
+        this.db.exec(`
       CREATE TABLE IF NOT EXISTS media (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
@@ -45,9 +37,8 @@ class DatabaseConnection {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
-
-    // Create sources table if it doesn't exist
-    this.db.exec(`
+        // Create sources table if it doesn't exist
+        this.db.exec(`
       CREATE TABLE IF NOT EXISTS sources (
         id TEXT PRIMARY KEY,
         mediaId TEXT NOT NULL,
@@ -57,9 +48,8 @@ class DatabaseConnection {
         FOREIGN KEY (mediaId) REFERENCES media (id) ON DELETE CASCADE
       )
     `);
-
-    // Create scraping_jobs table for persistent job management
-    this.db.exec(`
+        // Create scraping_jobs table for persistent job management
+        this.db.exec(`
       CREATE TABLE IF NOT EXISTS scraping_jobs (
         id TEXT PRIMARY KEY,
         status TEXT NOT NULL DEFAULT 'pending',
@@ -86,9 +76,8 @@ class DatabaseConnection {
         error_message TEXT
       )
     `);
-
-    // Create job_logs table for detailed tracking
-    this.db.exec(`
+        // Create job_logs table for detailed tracking
+        this.db.exec(`
       CREATE TABLE IF NOT EXISTS job_logs (
         id TEXT PRIMARY KEY,
         job_id TEXT NOT NULL,
@@ -99,14 +88,11 @@ class DatabaseConnection {
         FOREIGN KEY (job_id) REFERENCES scraping_jobs (id) ON DELETE CASCADE
       )
     `);
-
-    console.log('📊 Database tables initialized');
-  }
-
-  public close(): void {
-    this.db.close();
-  }
+        console.log('📊 Database tables initialized');
+    }
+    close() {
+        this.db.close();
+    }
 }
-
 export const dbConnection = DatabaseConnection.getInstance();
 export const db = dbConnection.getDatabase();

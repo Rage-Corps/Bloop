@@ -47,6 +47,11 @@ export async function scrapingRoutes(fastify: FastifyInstance) {
                   default: 1000,
                   description: 'Wait time between requests in ms (default: 1000)',
                 },
+                force: {
+                  type: 'boolean',
+                  default: false,
+                  description: 'Bypass early termination checks - process all pages even if links already exist (default: false)',
+                },
               },
             },
           },
