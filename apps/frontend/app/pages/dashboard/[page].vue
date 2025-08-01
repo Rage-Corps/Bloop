@@ -196,11 +196,23 @@ definePageMeta({
   middleware: 'auth',
 });
 
+const route = useRoute();
 const router = useRouter();
 const { fetchMedia, loading, error } = useMedia();
 
-// Current page is always 1 for main dashboard route
-const currentPage = ref(1);
+// Get current page from route params (default to 1)
+const currentPage = computed(() => {
+  const page = parseInt(route.params.page as string) || 1;
+  return Math.max(1, page);
+});
+
+// Redirect to /dashboard if page is 1
+watch(() => route.params.page, (newPage) => {
+  const pageNum = parseInt(newPage as string);
+  if (pageNum === 1) {
+    router.replace('/dashboard');
+  }
+}, { immediate: true });
 
 // Reactive data
 const mediaData = ref<any>(null);
@@ -227,24 +239,19 @@ const loadMedia = async () => {
 };
 
 const refreshMedia = () => {
-  currentPage.value = 1;
-  loadMedia();
+  navigateToPage(1);
 };
 
 const navigateToPage = (page: number) => {
   if (page === 1) {
-    // Stay on /dashboard for page 1
-    currentPage.value = 1;
-    loadMedia();
+    router.push('/dashboard');
   } else {
-    // Navigate to /dashboard/[page] for other pages
     router.push(`/dashboard/${page}`);
   }
 };
 
 const debouncedSearch = debounce(() => {
-  currentPage.value = 1;
-  loadMedia();
+  navigateToPage(1);
 }, 500);
 
 const openMediaDetail = (item: any) => {
@@ -258,15 +265,34 @@ const handleImageError = (event: Event) => {
     'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMiAxNkM5Ljc5IDE2IDggMTQuMjEgOCAxMlMxMC43OSA4IDEyIDhTMTYgOS43OSAxNiAxMlMxNC4yMSAxNiAxMiAxNloiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+';
 };
 
-// Lifecycle
-onMounted(() => {
-  loadMedia();
-});
-
+// Watchers
+watch(() => route.params.page, loadMedia, { immediate: true });
 watch(searchQuery, () => {
   if (!searchQuery.value) {
     loadMedia();
   }
+});
+
+// Watch for invalid page numbers and redirect
+watch(mediaData, (newData) => {
+  if (newData && newData.total > 0) {
+    const totalPages = Math.ceil(newData.total / itemsPerPage);
+    const currentPageNum = currentPage.value;
+    
+    if (currentPageNum > totalPages && totalPages > 0) {
+      // Redirect to the last valid page
+      if (totalPages === 1) {
+        router.replace('/dashboard');
+      } else {
+        router.replace(`/dashboard/${totalPages}`);
+      }
+    }
+  }
+});
+
+// Lifecycle
+onMounted(() => {
+  loadMedia();
 });
 </script>
 

@@ -99,7 +99,7 @@ importers:
       eslint:
         specifier: ^9.32.0
         version: 9.32.0(jiti@2.5.1)
-      lodash-es:
+      lodash:
         specifier: ^4.17.21
         version: 4.17.21
       nuxt:
