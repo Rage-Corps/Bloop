@@ -1,122 +1,121 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full space-y-8">
-      <div>
-        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Create your account
-        </h2>
-      </div>
-      <form class="mt-8 space-y-6" @submit.prevent="handleRegister">
-        <div class="rounded-md shadow-sm -space-y-px">
-          <div>
-            <label for="name" class="sr-only">Full name</label>
-            <input
-              id="name"
-              v-model="name"
-              name="name"
-              type="text"
-              autocomplete="name"
-              required
-              class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="Full name"
-            />
-          </div>
-          <div>
-            <label for="email" class="sr-only">Email address</label>
-            <input
-              id="email"
-              v-model="email"
-              name="email"
-              type="email"
-              autocomplete="email"
-              required
-              class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="Email address"
-            />
-          </div>
-          <div>
-            <label for="password" class="sr-only">Password</label>
-            <input
-              id="password"
-              v-model="password"
-              name="password"
-              type="password"
-              autocomplete="new-password"
-              required
-              class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="Password"
-            />
-          </div>
-          <div>
-            <label for="confirm-password" class="sr-only">Confirm Password</label>
-            <input
-              id="confirm-password"
-              v-model="confirmPassword"
-              name="confirm-password"
-              type="password"
-              autocomplete="new-password"
-              required
-              class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="Confirm password"
-            />
-          </div>
+  <div
+    class="min-h-screen flex items-center justify-center bg-base-300 py-12 px-4 sm:px-6 lg:px-8"
+  >
+    <UCard class="max-w-md w-full">
+      <template #header>
+        <div class="text-center">
+          <h1 class="text-4xl font-bold text-primary mb-2">🫧 Bloop</h1>
+          <p class="text-lg text-gray-600">
+            Ready to join the Bloop universe?
+          </p>
         </div>
+      </template>
 
-        <div class="text-sm text-center">
-          <NuxtLink to="/login" class="font-medium text-indigo-600 hover:text-indigo-500">
-            Already have an account? Sign in
-          </NuxtLink>
-        </div>
+      <UForm :state="form" class="space-y-4" @submit="handleRegister">
+        <UInput
+          v-model="form.name"
+          type="text"
+          placeholder="Your awesome name"
+          icon="i-heroicons-user"
+          size="lg"
+          class="w-full"
+        />
 
-        <div>
-          <button
-            type="submit"
-            :disabled="loading"
-            class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-          >
-            {{ loading ? 'Creating account...' : 'Create account' }}
-          </button>
-        </div>
+        <UInput
+          v-model="form.email"
+          type="email"
+          placeholder="your.email@example.com"
+          icon="i-heroicons-envelope"
+          size="lg"
+          class="w-full"
+        />
 
-        <div v-if="error" class="text-red-600 text-sm text-center">
-          {{ error }}
+        <UInput
+          v-model="form.password"
+          type="password"
+          placeholder="Your super secret password"
+          icon="i-heroicons-lock-closed"
+          size="lg"
+          class="w-full"
+        />
+
+        <UInput
+          v-model="form.confirmPassword"
+          type="password"
+          placeholder="Confirm your super secret password"
+          icon="i-heroicons-lock-closed"
+          size="lg"
+          class="w-full"
+        />
+
+        <UButton
+          type="submit"
+          :loading="loading"
+          :disabled="loading"
+          size="lg"
+          block
+          class="mt-6"
+        >
+          {{ loading ? 'Creating your Bloop account...' : 'Join the adventure!' }}
+        </UButton>
+      </UForm>
+
+      <template #footer>
+        <div class="text-center">
+          <p class="text-sm text-gray-500 mb-2">Already part of the Bloop crew?</p>
+          <UButton to="/" variant="ghost" size="sm">
+            ← Back to sign in
+          </UButton>
         </div>
-      </form>
-    </div>
+      </template>
+
+      <UAlert
+        v-if="error"
+        color="primary"
+        variant="soft"
+        :title="error"
+        class="mt-4"
+      />
+    </UCard>
   </div>
 </template>
 
 <script setup lang="ts">
-// Redirect to dashboard if already logged in
 definePageMeta({
-  middleware: 'guest'
-})
+  middleware: 'guest',
+});
 
-const { register } = useAuth()
+const { register } = useAuth();
 
-const name = ref('')
-const email = ref('')
-const password = ref('')
-const confirmPassword = ref('')
-const loading = ref(false)
-const error = ref('')
+const form = reactive({
+  name: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+});
+
+const loading = ref(false);
+const error = ref('');
 
 const handleRegister = async () => {
-  if (password.value !== confirmPassword.value) {
-    error.value = 'Passwords do not match'
-    return
+  if (form.password !== form.confirmPassword) {
+    error.value = 'Passwords do not match - double check those secrets!';
+    return;
   }
 
-  loading.value = true
-  error.value = ''
+  loading.value = true;
+  error.value = '';
 
   try {
-    await register(email.value, password.value, name.value)
-    await navigateTo('/dashboard')
+    await register(form.email, form.password, form.name);
+    await navigateTo('/dashboard');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
-    error.value = err.message || 'Registration failed. Please try again.'
+    error.value =
+      err.message || 'Oops! The Bloop registration failed. Try again!';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 </script>
