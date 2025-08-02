@@ -24,6 +24,33 @@
         <!-- Content -->
         <div class="p-4 overflow-y-auto h-full pb-20">
           <div v-if="media" class="space-y-6">
+            <!-- Video Player -->
+            <div v-if="media.sources?.length" class="space-y-4">
+              <div class="space-y-2">
+                <h4 class="text-sm font-semibold text-gray-300">
+                  Video Player
+                </h4>
+                <USelect
+                  v-model="selectedSourceId"
+                  :items="sourceOptions"
+                  placeholder="Select a source to play"
+                  class="w-full"
+                />
+              </div>
+              <div
+                v-if="selectedSource"
+                class="bg-black rounded-lg overflow-hidden"
+              >
+                <iframe
+                  :src="selectedSource.url"
+                  class="w-full h-96"
+                  frameborder="0"
+                  allowfullscreen
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                />
+              </div>
+            </div>
+
             <!-- Media Info -->
             <div class="space-y-4">
               <div>
@@ -60,39 +87,6 @@
                 </div>
               </div>
 
-              <!-- Sources -->
-              <div v-if="media.sources?.length">
-                <h4 class="text-sm font-semibold text-gray-300 mb-2">
-                  Sources
-                </h4>
-                <div class="space-y-2">
-                  <div
-                    v-for="source in media.sources"
-                    :key="source.id"
-                    class="flex items-center justify-between p-2 bg-gray-800 rounded-lg"
-                  >
-                    <div class="flex-1 min-w-0">
-                      <p class="text-sm font-medium text-white truncate">
-                        {{ source.sourceName }}
-                      </p>
-                      <p class="text-xs text-gray-400 truncate">
-                        {{ source.url }}
-                      </p>
-                    </div>
-                    <UButton
-                      :to="source.url"
-                      target="_blank"
-                      color="primary"
-                      variant="soft"
-                      size="xs"
-                      icon="i-heroicons-arrow-top-right-on-square"
-                    >
-                      Visit
-                    </UButton>
-                  </div>
-                </div>
-              </div>
-
               <!-- Additional Info -->
               <div class="space-y-3">
                 <div v-if="media.description" class="space-y-2">
@@ -106,15 +100,6 @@
                   <h4 class="text-sm font-semibold text-gray-300">Created</h4>
                   <p class="text-sm text-gray-400">
                     {{ formatDate(media.createdAt) }}
-                  </p>
-                </div>
-
-                <div v-if="media.dimensions" class="space-y-2">
-                  <h4 class="text-sm font-semibold text-gray-300">
-                    Dimensions
-                  </h4>
-                  <p class="text-sm text-gray-400">
-                    {{ media.dimensions.width }} x {{ media.dimensions.height }}
                   </p>
                 </div>
               </div>
@@ -134,11 +119,60 @@ interface Props {
   isOpen: boolean;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
   close: [];
 }>();
+const selectedSourceId = ref<string | undefined>(undefined);
+
+const sourceOptions = computed(() => {
+  console.log('Computing sourceOptions, media:', props.media);
+  console.log('Sources array:', props.media?.sources);
+  console.log('Sources length:', props.media?.sources?.length);
+
+  if (!props.media?.sources?.length) {
+    console.log('No sources found, returning empty array');
+    return [];
+  }
+
+  const options = props.media.sources.map((source) => ({
+    label: source.sourceName || 'Unnamed Source',
+    value: source.id,
+  }));
+
+  console.log('Generated source options:', options);
+  return options;
+});
+
+const selectedSource = computed(() => {
+  if (!selectedSourceId.value || !props.media?.sources?.length) return null;
+
+  return props.media.sources.find(
+    (source) => source.id === selectedSourceId.value
+  );
+});
+
+// Reset selected source when media changes
+watch(
+  () => props.media,
+  (newMedia) => {
+    console.log('Media prop changed:', newMedia);
+    console.log('New media sources:', newMedia?.sources);
+    selectedSourceId.value = null;
+  }
+);
+
+// Debug when drawer opens
+watch(
+  () => props.isOpen,
+  (isOpen) => {
+    console.log('Drawer isOpen changed:', isOpen);
+    if (isOpen) {
+      console.log('Drawer opened with media:', props.media);
+    }
+  }
+);
 
 const handleOpenChange = (open: boolean) => {
   if (!open) {
