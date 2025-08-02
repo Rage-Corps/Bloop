@@ -5,7 +5,8 @@
       <div>
         <h2 class="text-2xl font-bold text-white">Your Media Library 📚</h2>
         <p class="text-gray-400 mt-1">
-          {{ mediaData?.total || 0 }} items total (showing {{ mediaData?.data?.length || 0 }})
+          {{ mediaData?.total || 0 }} items total (showing
+          {{ mediaData?.data?.length || 0 }})
         </p>
       </div>
 
@@ -126,64 +127,14 @@
       <!-- Pagination -->
       <div class="flex justify-center mt-8">
         <UPagination
-          :model-value="currentPage"
-          :page-count="Math.ceil((mediaData.total || 0) / itemsPerPage)"
-          :max="5"
-          show-last
-          show-first
-          @update:model-value="navigateToPage"
+          :total="mediaData.total"
+          :items-per-page="20"
+          :sibling-count="2"
+          :to="navigateToPage"
+          color="primary"
         />
       </div>
     </div>
-
-    <!-- Media Detail Modal -->
-    <UModal v-model="showMediaDetail">
-      <div v-if="selectedMedia" class="p-6">
-        <div class="flex justify-between items-start mb-4">
-          <h3 class="text-xl font-semibold text-white">
-            {{ selectedMedia.name }}
-          </h3>
-          <UButton
-            color="info"
-            variant="ghost"
-            icon="i-heroicons-x-mark"
-            @click="showMediaDetail = false"
-          />
-        </div>
-
-        <div class="space-y-4">
-          <img
-            :src="selectedMedia.thumbnailUrl"
-            :alt="selectedMedia.name"
-            class="w-full max-h-64 object-cover rounded-lg"
-          />
-
-          <p class="text-gray-300">{{ selectedMedia.description }}</p>
-
-          <div class="flex flex-wrap gap-2">
-            <UBadge
-              v-for="category in selectedMedia.categories"
-              :key="category"
-              color="primary"
-              variant="soft"
-            >
-              {{ category }}
-            </UBadge>
-          </div>
-
-          <div class="flex justify-end space-x-2 pt-4">
-            <UButton
-              :to="selectedMedia.pageUrl"
-              external
-              color="primary"
-              icon="i-heroicons-arrow-top-right-on-square"
-            >
-              View Original
-            </UButton>
-          </div>
-        </div>
-      </div>
-    </UModal>
   </div>
 </template>
 
@@ -197,10 +148,11 @@ definePageMeta({
 });
 
 const router = useRouter();
+const route = useRoute();
 const { fetchMedia, loading, error } = useMedia();
 
-// Current page is always 1 for main dashboard route
-const currentPage = ref(1);
+// Get current page from query parameters, default to 1
+const currentPage = computed(() => parseInt(route.query.page as string) || 1);
 
 // Reactive data
 const mediaData = ref<any>(null);
@@ -214,6 +166,7 @@ const offset = computed(() => (currentPage.value - 1) * itemsPerPage);
 
 // Methods
 const loadMedia = async () => {
+  console.log('OFFSET', offset.value);
   try {
     const response = await fetchMedia({
       limit: itemsPerPage,
@@ -221,29 +174,27 @@ const loadMedia = async () => {
       source: searchQuery.value || undefined,
     });
     mediaData.value = response;
+    console.log('RES', response);
   } catch (err) {
     console.error('Failed to load media:', err);
   }
 };
 
 const refreshMedia = () => {
-  currentPage.value = 1;
+  router.push({ query: { page: 1 } });
   loadMedia();
 };
 
 const navigateToPage = (page: number) => {
-  if (page === 1) {
-    // Stay on /dashboard for page 1
-    currentPage.value = 1;
-    loadMedia();
-  } else {
-    // Navigate to /dashboard/[page] for other pages
-    router.push(`/dashboard/${page}`);
-  }
+  return {
+    query: {
+      page,
+    },
+  };
 };
 
 const debouncedSearch = debounce(() => {
-  currentPage.value = 1;
+  router.push({ query: { page: 1 } });
   loadMedia();
 }, 500);
 
@@ -268,6 +219,13 @@ watch(searchQuery, () => {
     loadMedia();
   }
 });
+
+watch(
+  () => route.query.page,
+  () => {
+    loadMedia();
+  }
+);
 </script>
 
 <style scoped>
