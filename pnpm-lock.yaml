@@ -23,6 +23,9 @@ importers:
 
   apps/backend:
     dependencies:
+      '@bloop/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
       '@fastify/cors':
         specifier: ^11.0.1
         version: 11.1.0
@@ -72,6 +75,9 @@ importers:
 
   apps/frontend:
     dependencies:
+      '@bloop/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
       '@nuxt/content':
         specifier: 3.6.3
         version: 3.6.3(better-sqlite3@11.10.0)(magicast@0.3.5)(vue-component-type-helpers@3.0.5)
@@ -118,6 +124,16 @@ importers:
       '@types/lodash':
         specifier: ^4.17.20
         version: 4.17.20
+
+  packages/shared-types:
+    dependencies:
+      zod:
+        specifier: ^3.22.4
+        version: 3.25.76
+    devDependencies:
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.2
 
 packages:
 

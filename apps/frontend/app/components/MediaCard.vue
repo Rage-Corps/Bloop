@@ -25,6 +25,9 @@
         <span class="text-gray-500 text-xs">
           {{ item.categories?.length || 0 }} tags
         </span>
+        <span class="text-gray-500 text-xs">
+          {{ item.sources?.length || 0 }} sources
+        </span>
       </div>
 
       <!-- Categories -->
@@ -52,20 +55,15 @@
 </template>
 
 <script setup lang="ts">
-interface MediaItem {
-  id: string | number;
-  name: string;
-  thumbnailUrl: string;
-  categories?: string[];
-}
+import type { Media } from '@bloop/shared-types';
 
 interface Props {
-  item: MediaItem;
+  item: Media;
 }
 
 defineProps<Props>();
 defineEmits<{
-  click: [item: MediaItem];
+  click: [item: Media];
 }>();
 
 const handleImageError = (event: Event) => {

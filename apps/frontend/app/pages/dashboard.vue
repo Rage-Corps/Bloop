@@ -103,6 +103,7 @@
 
 <script setup lang="ts">
 import { debounce } from 'lodash';
+import type { Media, MediaWithMetadata, MediaListResponse } from '@bloop/shared-types';
 
 // Use the dashboard layout
 definePageMeta({
@@ -118,11 +119,11 @@ const { fetchMedia, loading, error } = useMedia();
 const currentPage = computed(() => parseInt(route.query.page as string) || 1);
 
 // Reactive data
-const mediaData = ref<any>(null);
+const mediaData = ref<MediaListResponse | null>(null);
 const itemsPerPage = 20;
 const searchQuery = ref('');
 const showMediaDetail = ref(false);
-const selectedMedia = ref<any>(null);
+const selectedMedia = ref<MediaWithMetadata | null>(null);
 
 // Computed
 const offset = computed(() => (currentPage.value - 1) * itemsPerPage);
@@ -161,8 +162,8 @@ const debouncedSearch = debounce(() => {
   loadMedia();
 }, 500);
 
-const openMediaDetail = (item: any) => {
-  selectedMedia.value = item;
+const openMediaDetail = (item: Media) => {
+  selectedMedia.value = item as MediaWithMetadata;
   showMediaDetail.value = true;
 };
 

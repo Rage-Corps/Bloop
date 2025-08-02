@@ -30,9 +30,15 @@
                 <h3 class="text-xl font-bold text-white mb-2">
                   {{ media.name }}
                 </h3>
-                <div class="flex items-center text-sm text-gray-400">
-                  <UIcon name="i-heroicons-tag" class="mr-1" />
-                  {{ media.categories?.length || 0 }} tags
+                <div class="flex items-center gap-4 text-sm text-gray-400">
+                  <div class="flex items-center">
+                    <UIcon name="i-heroicons-tag" class="mr-1" />
+                    {{ media.categories?.length || 0 }} tags
+                  </div>
+                  <div class="flex items-center">
+                    <UIcon name="i-heroicons-link" class="mr-1" />
+                    {{ media.sources?.length || 0 }} sources
+                  </div>
                 </div>
               </div>
 
@@ -51,6 +57,39 @@
                   >
                     {{ category }}
                   </UBadge>
+                </div>
+              </div>
+
+              <!-- Sources -->
+              <div v-if="media.sources?.length">
+                <h4 class="text-sm font-semibold text-gray-300 mb-2">
+                  Sources
+                </h4>
+                <div class="space-y-2">
+                  <div
+                    v-for="source in media.sources"
+                    :key="source.id"
+                    class="flex items-center justify-between p-2 bg-gray-800 rounded-lg"
+                  >
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-white truncate">
+                        {{ source.sourceName }}
+                      </p>
+                      <p class="text-xs text-gray-400 truncate">
+                        {{ source.url }}
+                      </p>
+                    </div>
+                    <UButton
+                      :to="source.url"
+                      target="_blank"
+                      color="primary"
+                      variant="soft"
+                      size="xs"
+                      icon="i-heroicons-arrow-top-right-on-square"
+                    >
+                      Visit
+                    </UButton>
+                  </div>
                 </div>
               </div>
 
@@ -88,22 +127,10 @@
 </template>
 
 <script setup lang="ts">
-interface MediaItem {
-  id: string | number;
-  name: string;
-  thumbnailUrl: string;
-  categories?: string[];
-  description?: string;
-  fileSize?: number;
-  createdAt?: string;
-  dimensions?: {
-    width: number;
-    height: number;
-  };
-}
+import type { MediaWithMetadata } from '@bloop/shared-types';
 
 interface Props {
-  media: MediaItem | null;
+  media: MediaWithMetadata | null;
   isOpen: boolean;
 }
 
@@ -117,12 +144,6 @@ const handleOpenChange = (open: boolean) => {
   if (!open) {
     emit('close');
   }
-};
-
-const handleImageError = (event: Event) => {
-  const img = event.target as HTMLImageElement;
-  img.src =
-    'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMiAxNkM5Ljc5IDE2IDggMTQuMjEgOCAxMlMxMC43OSA4IDEyIDhTMTYgOS43OSAxNiAxMlMxNC4yMSAxNiAxMiAxNloiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+';
 };
 
 const formatDate = (dateString: string) => {

@@ -60,6 +60,18 @@ export async function mediaRoutes(fastify: FastifyInstance) {
                       type: 'array',
                       items: { type: 'string' }
                     },
+                    sources: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'string' },
+                          mediaId: { type: 'string' },
+                          sourceName: { type: 'string' },
+                          url: { type: 'string' }
+                        }
+                      }
+                    },
                   },
                 },
               },
@@ -124,6 +136,18 @@ export async function mediaRoutes(fastify: FastifyInstance) {
               categories: { 
                 type: 'array',
                 items: { type: 'string' }
+              },
+              sources: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    mediaId: { type: 'string' },
+                    sourceName: { type: 'string' },
+                    url: { type: 'string' }
+                  }
+                }
               },
             },
           },

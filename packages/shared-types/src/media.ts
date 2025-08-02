@@ -38,20 +38,38 @@ export const MediaSchema = z.object({
   sources: z
     .array(z.object({
       id: z.string(),
-      mediaId: z.string(),
       sourceName: z.string(),
       url: z.string().url(),
     }))
     .optional()
     .default([])
     .transform((sources) => sources || []),
+
+  createdAt: z
+    .string()
+    .datetime()
+    .optional(),
+
+  updatedAt: z
+    .string()
+    .datetime()
+    .optional(),
 });
 
-// Schema for creating media (all fields required except sources)
-export const CreateMediaSchema = MediaSchema.omit({ sources: true });
+// Schema for creating media (all fields required except auto-generated ones)
+export const CreateMediaSchema = MediaSchema.omit({ 
+  createdAt: true, 
+  updatedAt: true,
+  sources: true 
+});
 
-// Schema for updating media (all fields optional except id and sources are omitted)
-export const UpdateMediaSchema = MediaSchema.partial().omit({ id: true, sources: true });
+// Schema for updating media (all fields optional except id is omitted)
+export const UpdateMediaSchema = MediaSchema.partial().omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true,
+  sources: true 
+});
 
 // Schema for query parameters
 export const MediaQuerySchema = z.object({
@@ -79,9 +97,28 @@ export const MediaParamsSchema = z.object({
   id: z.string().min(1, 'ID parameter is required'),
 });
 
+// API Response schemas
+export const MediaListResponseSchema = z.object({
+  data: z.array(MediaSchema),
+  total: z.number(),
+  filtered: z.number(),
+});
+
 // Type exports
 export type Media = z.infer<typeof MediaSchema>;
 export type CreateMedia = z.infer<typeof CreateMediaSchema>;
 export type UpdateMedia = z.infer<typeof UpdateMediaSchema>;
 export type MediaQuery = z.infer<typeof MediaQuerySchema>;
 export type MediaParams = z.infer<typeof MediaParamsSchema>;
+export type MediaListResponse = z.infer<typeof MediaListResponseSchema>;
+
+// Extended media type with computed properties for frontend
+export interface MediaWithMetadata extends Media {
+  sourceCount: number;
+  categoryCount: number;
+  fileSize?: number;
+  dimensions?: {
+    width: number;
+    height: number;
+  };
+}

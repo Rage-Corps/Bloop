@@ -1,6 +1,7 @@
 import { db } from './connection.js';
 import type { Media } from '../schemas/media.js';
 import { categoriesDatabase } from './categories.js';
+import { sourcesDatabase } from './sources.js';
 
 class MediaDatabase {
   constructor() {
@@ -14,10 +15,11 @@ class MediaDatabase {
     );
     const media = stmt.all() as Media[];
     
-    // Add categories to each media item
+    // Add categories and sources to each media item
     return media.map(item => ({
       ...item,
-      categories: categoriesDatabase.getCategoryNamesByMediaId(item.id)
+      categories: categoriesDatabase.getCategoryNamesByMediaId(item.id),
+      sources: sourcesDatabase.getSourcesByMediaId(item.id)
     }));
   }
 
@@ -31,7 +33,8 @@ class MediaDatabase {
     if (media) {
       return {
         ...media,
-        categories: categoriesDatabase.getCategoryNamesByMediaId(media.id)
+        categories: categoriesDatabase.getCategoryNamesByMediaId(media.id),
+        sources: sourcesDatabase.getSourcesByMediaId(media.id)
       };
     }
     
@@ -99,7 +102,8 @@ class MediaDatabase {
     if (media) {
       return {
         ...media,
-        categories: categoriesDatabase.getCategoryNamesByMediaId(media.id)
+        categories: categoriesDatabase.getCategoryNamesByMediaId(media.id),
+        sources: sourcesDatabase.getSourcesByMediaId(media.id)
       };
     }
     

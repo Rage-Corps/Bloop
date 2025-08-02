@@ -1,17 +1,4 @@
-interface MediaItem {
-  id: string;
-  name: string;
-  description: string;
-  thumbnailUrl: string;
-  pageUrl: string;
-  categories: string[];
-}
-
-interface MediaResponse {
-  data: MediaItem[];
-  total: number;
-  filtered: number;
-}
+import type { Media, MediaListResponse, MediaQuery as SharedMediaQuery } from '@bloop/shared-types';
 
 interface MediaQuery {
   limit?: number;
@@ -23,7 +10,7 @@ export const useMedia = () => {
   const loading = ref(false);
   const error = ref<string | null>(null);
 
-  const fetchMedia = async (query: MediaQuery = {}): Promise<MediaResponse> => {
+  const fetchMedia = async (query: MediaQuery = {}): Promise<MediaListResponse> => {
     loading.value = true;
     error.value = null;
 
@@ -34,7 +21,7 @@ export const useMedia = () => {
       if (query.offset) params.append('offset', query.offset.toString());
       if (query.source) params.append('source', query.source);
 
-      const response = await $fetch<MediaResponse>(
+      const response = await $fetch<MediaListResponse>(
         `http://localhost:3001/api/media?${params.toString()}`
       );
 
@@ -47,13 +34,13 @@ export const useMedia = () => {
     }
   };
 
-  const fetchMediaById = async (id: string): Promise<MediaItem> => {
+  const fetchMediaById = async (id: string): Promise<Media> => {
     loading.value = true;
     error.value = null;
 
     try {
-      const response = await $fetch<MediaItem>(
-        `http://localhost:3001/media/${id}`
+      const response = await $fetch<Media>(
+        `http://localhost:3001/api/media/${id}`
       );
       return response;
     } catch (err: any) {
