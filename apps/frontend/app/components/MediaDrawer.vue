@@ -27,9 +27,6 @@
             <!-- Video Player -->
             <div v-if="media.sources?.length" class="space-y-4">
               <div class="space-y-2">
-                <h4 class="text-sm font-semibold text-gray-300">
-                  Video Player
-                </h4>
                 <USelect
                   v-model="selectedSourceId"
                   :items="sourceOptions"
@@ -159,7 +156,7 @@ watch(
   (newMedia) => {
     console.log('Media prop changed:', newMedia);
     console.log('New media sources:', newMedia?.sources);
-    selectedSourceId.value = null;
+    selectedSourceId.value = undefined;
   }
 );
 
