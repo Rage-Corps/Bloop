@@ -158,7 +158,10 @@ class ScrapingService {
 
       const links = this.extractLinksFromHTML(html);
       const maxPageIndex = this.getMaxPageIndex(links, env.BASE_SCRAPE_URL);
-      const filteredMediaLinks = this.filterMediaLinks(links, env.BASE_SCRAPE_URL);
+      const filteredMediaLinks = this.filterMediaLinks(
+        links,
+        env.BASE_SCRAPE_URL
+      );
 
       // Update job with discovered information
       jobsDatabase.updateJobProgress(jobId, {
@@ -290,15 +293,28 @@ class ScrapingService {
   }
 
   private filterMediaLinks(links: string[], baseScrapUrl: string) {
-    const cleanBaseUrl = baseScrapUrl.replace(/\/+$/, '');
-    return links.filter((link) => {
-      const cleanLink = link.replace(/\/+$/, '');
-      return (
-        cleanLink.startsWith(cleanBaseUrl) &&
-        cleanLink !== cleanBaseUrl &&
-        !cleanLink.includes('/page/')
-      );
-    });
+    const baseUrl = new URL(baseScrapUrl).origin;
+    const uniqueLinks = new Set<string>();
+    const excludePaths = ['/contact-us', '/legal-notice', '/page', '/category'];
+
+    for (const link of links) {
+      if (link.startsWith(baseUrl)) {
+        // Exclude base URL and base URL with trailing slash
+        if (link === baseUrl || link === `${baseUrl}/`) {
+          continue;
+        }
+
+        const shouldExclude = excludePaths.some((path) =>
+          link.includes(`${baseUrl}${path}`)
+        );
+
+        if (!shouldExclude) {
+          uniqueLinks.add(link);
+        }
+      }
+    }
+
+    return Array.from(uniqueLinks);
   }
 
   private async fetchPageHTML(url: string): Promise<string> {
@@ -330,46 +346,61 @@ class ScrapingService {
   private getMediaLinkThumbnailAndName(
     $: cheerio.CheerioAPI
   ): { thumbnailUrl: string; name: string } | null {
-    const thumbnailElement = $('.rmbd img');
-    if (thumbnailElement.length > 0) {
-      const thumbnailUrl = thumbnailElement.attr('src') || '';
-      const name = thumbnailElement.attr('alt') || 'Untitled';
-      return { thumbnailUrl, name };
+    const thumbnailImg = $('img.rmbd, noscript img.rmbd').first();
+    const thumbnailUrl = thumbnailImg.attr('data-src');
+    const altText = thumbnailImg.attr('alt');
+
+    if (!thumbnailUrl) {
+      return null;
     }
-    return null;
+
+    const name = altText ? decodeURIComponent(altText) : '';
+
+    return { thumbnailUrl, name };
   }
 
   private getMediaLinkInfo(
     $: cheerio.CheerioAPI
   ): { description: string } | null {
-    const descriptionElement = $('.wp-block-columns p').first();
-    if (descriptionElement.length > 0) {
-      const description = descriptionElement.text().trim();
-      return { description };
+    const descriptionDiv = $('div.the_description');
+    const firstParagraph = descriptionDiv.find('p').first();
+    const description = firstParagraph.text().trim();
+
+    if (!description) {
+      return null;
     }
-    return null;
+
+    return { description };
   }
 
-  private getMediaSources($: cheerio.CheerioAPI): { source: string; url: string }[] {
+  private getMediaSources(
+    $: cheerio.CheerioAPI
+  ): { source: string; url: string }[] {
+    const linkTabs = $('#link-tabs');
     const sources: { source: string; url: string }[] = [];
-    $('.wp-block-columns a').each((_, element) => {
+
+    linkTabs.find('li a').each((index, element) => {
+      const source = $(element).text().trim();
       const url = $(element).attr('href');
-      const text = $(element).text().trim();
-      if (url && text) {
-        sources.push({ source: text, url });
+
+      if (source && url) {
+        sources.push({ source, url });
       }
     });
+
     return sources;
   }
 
   private getMediaLinkCategories($: cheerio.CheerioAPI): string[] {
     const categories: string[] = [];
-    $('.entry-categories a, .cat-links a').each((_, element) => {
-      const category = $(element).text().trim();
-      if (category) {
-        categories.push(category);
+
+    $('a[rel="category"]').each((index, element) => {
+      const categoryText = $(element).text().trim();
+      if (categoryText) {
+        categories.push(categoryText);
       }
     });
+
     return categories;
   }
 
@@ -385,6 +416,7 @@ class ScrapingService {
     mediaCategories: string[],
     link: string
   ) {
+    console.log(media.name, media.description, media.thumbnailUrl);
     if (
       media.name &&
       media.description &&
@@ -394,7 +426,7 @@ class ScrapingService {
       try {
         // Check if media already exists by pageUrl
         const existingMedia = mediaDatabase.getMediaByPageUrl(link);
-        
+
         if (existingMedia) {
           // Update existing media
           const updated = mediaDatabase.updateMedia(existingMedia.id, {
@@ -404,21 +436,26 @@ class ScrapingService {
           });
 
           // Get existing sources
-          const existingSources = sourcesDatabase.getSourcesByMediaId(existingMedia.id);
-          
+          const existingSources = sourcesDatabase.getSourcesByMediaId(
+            existingMedia.id
+          );
+
           // For simplicity, we'll replace sources if they're different
           // In a more sophisticated approach, we could compare and only update changed ones
-          const sourcesChanged = existingSources.length !== mediaSources.length ||
-            !mediaSources.every(newSource => 
-              existingSources.some(existing => 
-                existing.sourceName === newSource.source && existing.url === newSource.url
+          const sourcesChanged =
+            existingSources.length !== mediaSources.length ||
+            !mediaSources.every((newSource) =>
+              existingSources.some(
+                (existing) =>
+                  existing.sourceName === newSource.source &&
+                  existing.url === newSource.url
               )
             );
 
           if (sourcesChanged) {
             // Only delete and re-add if sources actually changed
             sourcesDatabase.deleteSourcesByMediaId(existingMedia.id);
-            
+
             const sources = mediaSources.map((source) => ({
               id: randomUUID(),
               mediaId: existingMedia.id,
@@ -430,15 +467,22 @@ class ScrapingService {
           }
 
           // Check if categories changed
-          const existingCategories = categoriesDatabase.getCategoryNamesByMediaId(existingMedia.id);
-          const categoriesChanged = existingCategories.length !== mediaCategories.length ||
-            !mediaCategories.every(category => existingCategories.includes(category));
+          const existingCategories =
+            categoriesDatabase.getCategoryNamesByMediaId(existingMedia.id);
+          const categoriesChanged =
+            existingCategories.length !== mediaCategories.length ||
+            !mediaCategories.every((category) =>
+              existingCategories.includes(category)
+            );
 
           if (categoriesChanged) {
             // Update categories
             categoriesDatabase.deleteCategoriesByMediaId(existingMedia.id);
             if (mediaCategories.length > 0) {
-              categoriesDatabase.addCategories(mediaCategories, existingMedia.id);
+              categoriesDatabase.addCategories(
+                mediaCategories,
+                existingMedia.id
+              );
             }
           }
 
@@ -455,7 +499,8 @@ class ScrapingService {
             description: media.description,
             thumbnailUrl: media.thumbnailUrl,
             pageUrl: link,
-            categories: [], // Will be populated separately
+            categories: [],
+            sources: [],
           });
 
           const sources = mediaSources.map((source) => ({
@@ -591,7 +636,9 @@ class ScrapingService {
         return;
       }
 
-      console.log(`\n📄 Processing media link ${i + 1}/${mediaLinks.length}: ${link}`);
+      console.log(
+        `\n📄 Processing media link ${i + 1}/${mediaLinks.length}: ${link}`
+      );
 
       try {
         await this.processLink(link, force, jobId);
@@ -607,7 +654,6 @@ class ScrapingService {
       }
     }
   }
-
 
   private async processPage(
     pageIndex: number,
