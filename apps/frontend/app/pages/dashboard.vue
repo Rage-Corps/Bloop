@@ -1,94 +1,119 @@
 <template>
-  <div>
-    <!-- Media Grid Header -->
-    <div class="flex justify-between items-center mb-6">
-      <div>
-        <h2 class="text-2xl font-bold text-white">Your Media Library 📚</h2>
-        <p class="text-gray-400 mt-1">
-          {{ mediaData?.total || 0 }} items total (showing
-          {{ mediaData?.data?.length || 0 }})
+  <div class="flex h-screen">
+    <!-- Main Content Area -->
+    <div
+      class="flex-1 transition-all duration-300 ease-in-out"
+      :class="{ 
+        'mr-[70vw] overflow-hidden': showMediaDetail,
+        'overflow-y-auto': !showMediaDetail 
+      }"
+    >
+      <!-- Media Grid Header -->
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-white">Your Media Library 📚</h2>
+          <p class="text-gray-400 mt-1">
+            {{ mediaData?.total || 0 }} items total (showing
+            {{ mediaData?.data?.length || 0 }})
+          </p>
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="flex space-x-3">
+          <UInput
+            v-model="searchQuery"
+            placeholder="Search media..."
+            icon="i-heroicons-magnifying-glass"
+            size="md"
+            @input="debouncedSearch"
+          />
+          <UButton
+            color="primary"
+            variant="soft"
+            icon="i-heroicons-arrow-path"
+            :loading="loading"
+            @click="refreshMedia"
+          >
+            Refresh
+          </UButton>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="loading && !mediaData" class="text-center py-12">
+        <UIcon
+          name="i-heroicons-arrow-path"
+          class="animate-spin text-4xl text-primary mb-4"
+        />
+        <p class="text-gray-400">Loading your media...</p>
+      </div>
+
+      <!-- Error State -->
+      <UAlert
+        v-else-if="error"
+        color="error"
+        variant="soft"
+        :title="error"
+        class="mb-6"
+      />
+
+      <!-- Empty State -->
+      <div
+        v-else-if="mediaData && mediaData.data.length === 0"
+        class="text-center py-16"
+      >
+        <div class="text-6xl mb-4">🌊</div>
+        <h3 class="text-xl font-semibold text-white mb-2">No media found</h3>
+        <p class="text-gray-400 mb-6">
+          {{
+            searchQuery
+              ? 'Try adjusting your search terms'
+              : 'Start by adding some media to your collection'
+          }}
         </p>
       </div>
 
-      <!-- Search and Filters -->
-      <div class="flex space-x-3">
-        <UInput
-          v-model="searchQuery"
-          placeholder="Search media..."
-          icon="i-heroicons-magnifying-glass"
-          size="md"
-          @input="debouncedSearch"
-        />
-        <UButton
-          color="primary"
-          variant="soft"
-          icon="i-heroicons-arrow-path"
-          :loading="loading"
-          @click="refreshMedia"
-        >
-          Refresh
-        </UButton>
-      </div>
-    </div>
-
-    <!-- Loading State -->
-    <div v-if="loading && !mediaData" class="text-center py-12">
-      <UIcon
-        name="i-heroicons-arrow-path"
-        class="animate-spin text-4xl text-primary mb-4"
-      />
-      <p class="text-gray-400">Loading your media...</p>
-    </div>
-
-    <!-- Error State -->
-    <UAlert
-      v-else-if="error"
-      color="error"
-      variant="soft"
-      :title="error"
-      class="mb-6"
-    />
-
-    <!-- Empty State -->
-    <div
-      v-else-if="mediaData && mediaData.data.length === 0"
-      class="text-center py-16"
-    >
-      <div class="text-6xl mb-4">🌊</div>
-      <h3 class="text-xl font-semibold text-white mb-2">No media found</h3>
-      <p class="text-gray-400 mb-6">
-        {{
-          searchQuery
-            ? 'Try adjusting your search terms'
-            : 'Start by adding some media to your collection'
-        }}
-      </p>
-    </div>
-
-    <!-- Media Grid -->
-    <div v-else-if="mediaData" class="space-y-6">
-      <div
-        class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
+      <!-- Media Grid -->
+      <div 
+        v-else-if="mediaData" 
+        class="space-y-6"
+        :class="showMediaDetail ? 'h-full overflow-y-auto' : ''"
       >
-        <MediaCard
-          v-for="item in mediaData.data"
-          :key="item.id"
-          :item="item"
-          @click="openMediaDetail"
-        />
-      </div>
+        <div
+          class="grid gap-4 transition-all duration-300"
+          :class="
+            showMediaDetail
+              ? 'grid-cols-1'
+              : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+          "
+        >
+          <MediaCard
+            v-for="item in mediaData.data"
+            :key="item.id"
+            :item="item"
+            @click="openMediaDetail"
+          />
+        </div>
 
-      <!-- Pagination -->
-      <div class="flex justify-center mt-8">
-        <UPagination
-          :total="mediaData.total"
-          :items-per-page="20"
-          :sibling-count="2"
-          :to="navigateToPage"
-          color="primary"
-        />
+        <!-- Pagination -->
+        <div class="flex justify-center mt-8 pb-8">
+          <UPagination
+            :total="mediaData.total"
+            :items-per-page="20"
+            :sibling-count="2"
+            :to="navigateToPage"
+            color="primary"
+          />
+        </div>
       </div>
     </div>
+
+    <!-- Media Detail Panel -->
+    <MediaDetail
+      :media="selectedMedia"
+      :is-open="showMediaDetail"
+      @close="closeMediaDetail"
+    />
   </div>
 </template>
 
@@ -157,6 +182,11 @@ const openMediaDetail = (item: any) => {
   showMediaDetail.value = true;
 };
 
+const closeMediaDetail = () => {
+  showMediaDetail.value = false;
+  selectedMedia.value = null;
+};
+
 // Lifecycle
 onMounted(() => {
   loadMedia();
@@ -175,4 +205,3 @@ watch(
   }
 );
 </script>
-
