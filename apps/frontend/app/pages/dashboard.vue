@@ -1,13 +1,7 @@
 <template>
-  <div class="flex h-screen">
+  <div>
     <!-- Main Content Area -->
-    <div
-      class="flex-1 transition-all duration-300 ease-in-out"
-      :class="{ 
-        'mr-[70vw] overflow-hidden': showMediaDetail,
-        'overflow-y-auto': !showMediaDetail 
-      }"
-    >
+    <div>
       <!-- Media Grid Header -->
       <div class="flex justify-between items-center mb-6">
         <div>
@@ -74,18 +68,9 @@
       </div>
 
       <!-- Media Grid -->
-      <div 
-        v-else-if="mediaData" 
-        class="space-y-6"
-        :class="showMediaDetail ? 'h-full overflow-y-auto' : ''"
-      >
+      <div v-else-if="mediaData" class="space-y-6">
         <div
-          class="grid gap-4 transition-all duration-300"
-          :class="
-            showMediaDetail
-              ? 'grid-cols-1'
-              : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
-          "
+          class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
         >
           <MediaCard
             v-for="item in mediaData.data"
@@ -108,8 +93,7 @@
       </div>
     </div>
 
-    <!-- Media Detail Panel -->
-    <MediaDetail
+    <MediaDrawer
       :media="selectedMedia"
       :is-open="showMediaDetail"
       @close="closeMediaDetail"
