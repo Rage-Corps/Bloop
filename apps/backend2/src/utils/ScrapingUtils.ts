@@ -103,4 +103,123 @@ export class ScrapingUtils {
     const links = this.extractLinksFromHTML(html);
     return this.filterMediaLinks(links, this.baseUrl);
   }
+
+  async processLink(link: string) {
+    try {
+      console.log(`Processing link: ${link}`);
+
+      const html = await this.fetchPageHTML(link);
+
+      const $ = cheerio.load(html);
+      const thumbnailNameResult = this.getMediaLinkThumbnailAndName($);
+
+      if (thumbnailNameResult) {
+        const { thumbnailUrl, name } = thumbnailNameResult;
+        console.log(`Thumbnail URL: ${thumbnailUrl}`);
+        console.log(`Name: ${name}`);
+      } else {
+        console.log('No thumbnail found with class "rmbd"');
+      }
+
+      const mediaInfo = this.getMediaLinkInfo($);
+
+      const mediaCategories = this.getMediaLinkCategories($);
+
+      if (mediaCategories.length > 0) {
+        console.log(`Categories: ${mediaCategories.join(', ')}`);
+      } else {
+        console.log('No categories found');
+      }
+
+      if (mediaInfo) {
+        console.log(`Description: ${mediaInfo.description}`);
+      } else {
+        console.log('No description found');
+      }
+
+      const mediaSources = this.getMediaSources($);
+
+      if (mediaSources.length > 0) {
+        console.log(`Found ${mediaSources.length} media sources:`);
+        mediaSources.forEach((source, index) => {
+          console.log(`${index + 1}. ${source.source}: ${source.url}`);
+        });
+      } else {
+        console.log('No media sources found');
+      }
+
+      const media = {
+        name: thumbnailNameResult?.name,
+        description: mediaInfo?.description,
+        thumbnailUrl: thumbnailNameResult?.thumbnailUrl,
+        sources: mediaSources,
+        categories: mediaCategories,
+      };
+
+      return media;
+    } catch (error) {
+      console.error(`Error processing link ${link}:`, error);
+    }
+  }
+
+  private getMediaLinkThumbnailAndName(
+    $: cheerio.CheerioAPI
+  ): { thumbnailUrl: string; name: string } | null {
+    const thumbnailImg = $('img.rmbd, noscript img.rmbd').first();
+    const thumbnailUrl = thumbnailImg.attr('data-src');
+    const altText = thumbnailImg.attr('alt');
+
+    if (!thumbnailUrl) {
+      return null;
+    }
+
+    const name = altText ? decodeURIComponent(altText) : '';
+
+    return { thumbnailUrl, name };
+  }
+
+  private getMediaLinkInfo(
+    $: cheerio.CheerioAPI
+  ): { description: string } | null {
+    const descriptionDiv = $('div.the_description');
+    const firstParagraph = descriptionDiv.find('p').first();
+    const description = firstParagraph.text().trim();
+
+    if (!description) {
+      return null;
+    }
+
+    return { description };
+  }
+
+  private getMediaSources(
+    $: cheerio.CheerioAPI
+  ): { source: string; url: string }[] {
+    const linkTabs = $('#link-tabs');
+    const sources: { source: string; url: string }[] = [];
+
+    linkTabs.find('li a').each((index, element) => {
+      const source = $(element).text().trim();
+      const url = $(element).attr('href');
+
+      if (source && url) {
+        sources.push({ source, url });
+      }
+    });
+
+    return sources;
+  }
+
+  private getMediaLinkCategories($: cheerio.CheerioAPI): string[] {
+    const categories: string[] = [];
+
+    $('a[rel="category"]').each((index, element) => {
+      const categoryText = $(element).text().trim();
+      if (categoryText) {
+        categories.push(categoryText);
+      }
+    });
+
+    return categories;
+  }
 }

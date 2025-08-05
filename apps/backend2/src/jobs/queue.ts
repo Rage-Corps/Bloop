@@ -1,5 +1,6 @@
 import { Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
+import { ScrapingUtils } from '../utils/ScrapingUtils';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -46,9 +47,13 @@ export const initializeWorker = async () => {
       async (job) => {
         console.log(`Processing scraping job ${job.id}:`, job.data);
 
-        const { pageLinks } = job.data;
-        console.log('MEDid', pageLinks);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const { pageLinks, baseUrl } = job.data;
+        const scrapeUtil = new ScrapingUtils(baseUrl);
+
+        for (const link of pageLinks) {
+          console.log('Processing:', link);
+          const media = await scrapeUtil.processLink(link);
+        }
 
         console.log(`Completed scraping job ${job.id}`);
         return { message: 'Scraping completed successfully', jobId: job.id };
