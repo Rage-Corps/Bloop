@@ -13,7 +13,7 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
         body: {
           type: 'object',
           properties: {
-            maxPages: { type: 'number', minimum: 1, maximum: 100, default: 1 },
+            maxPages: { type: 'number', minimum: 1, maximum: 100 },
             forceMode: { type: 'boolean', default: false },
             waitTime: {
               type: 'number',
@@ -44,7 +44,7 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const {
-        maxPages = 1,
+        maxPages,
         forceMode = false,
         waitTime = 1000,
       } = request.body as {
@@ -63,16 +63,15 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
 
       const scrapeUtil = new ScrapingUtils(baseUrl);
 
-      const startData = await scrapeUtil.getScrapingInfo();
-
-      console.log('START', startData);
+      const { firstPageLinks, maxPageIndex } =
+        await scrapeUtil.getScrapingInfo();
 
       const job = await scrapingQueue.add(
-        'scrape-site',
+        'scrape-page-1',
         {
           id: jobId,
           baseUrl,
-          maxPages,
+          pageLinks: firstPageLinks,
           forceMode,
           waitTime,
           status: 'pending',
@@ -82,6 +81,27 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
           jobId,
         }
       );
+
+      for (let index = 2; index <= (maxPages ?? maxPageIndex); index++) {
+        const jobId = randomUUID();
+        const pageUrl = `${baseUrl}page/${index}`;
+        const pageLinks = await scrapeUtil.fetchAndExtractLinks(pageUrl);
+        await scrapingQueue.add(
+          `scrape-page-${index}`,
+          {
+            id: jobId,
+            baseUrl,
+            pageLinks,
+            forceMode,
+            waitTime,
+            status: 'pending',
+            createdAt: new Date().toISOString(),
+          },
+          {
+            jobId,
+          }
+        );
+      }
 
       fastify.log.info(`🚀 Started scraping job ${job.id} for ${baseUrl}`);
 

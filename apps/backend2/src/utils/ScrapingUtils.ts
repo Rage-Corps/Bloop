@@ -97,4 +97,10 @@ export class ScrapingUtils {
 
     return Array.from(uniqueLinks);
   }
+
+  async fetchAndExtractLinks(pageUrl: string): Promise<string[]> {
+    const html = await this.fetchPageHTML(pageUrl);
+    const links = this.extractLinksFromHTML(html);
+    return this.filterMediaLinks(links, this.baseUrl);
+  }
 }

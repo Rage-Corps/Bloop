@@ -1,26 +1,26 @@
-import { Queue, Worker } from 'bullmq'
-import IORedis from 'ioredis'
+import { Queue, Worker } from 'bullmq';
+import IORedis from 'ioredis';
 
-const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379'
+const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
 const connectionConfig = {
   host: 'redis',
   port: 6379,
-  maxRetriesPerRequest: 3,
+  maxRetriesPerRequest: null,
   retryDelayOnFailure: 100,
   connectTimeout: 10000,
-  lazyConnect: true
-}
+  lazyConnect: true,
+};
 
-const connection = new IORedis(connectionConfig)
+const connection = new IORedis(connectionConfig);
 
 connection.on('connect', () => {
-  console.log('✅ Connected to Redis')
-})
+  console.log('✅ Connected to Redis');
+});
 
 connection.on('error', (err) => {
-  console.error('❌ Redis connection error:', err.message)
-})
+  console.error('❌ Redis connection error:', err.message);
+});
 
 export const scrapingQueue = new Queue('scraping', {
   connection: connection.duplicate(),
@@ -30,45 +30,47 @@ export const scrapingQueue = new Queue('scraping', {
     attempts: 3,
     backoff: {
       type: 'exponential',
-      delay: 2000
-    }
-  }
-})
+      delay: 2000,
+    },
+  },
+});
 
-let scrapingWorker: Worker | null = null
+let scrapingWorker: Worker | null = null;
 
 export const initializeWorker = async () => {
   try {
-    await connection.connect()
-    
+    await connection.connect();
+
     scrapingWorker = new Worker(
       'scraping',
       async (job) => {
-        console.log(`Processing scraping job ${job.id}:`, job.data)
-        
-        await new Promise(resolve => setTimeout(resolve, 5000))
-        
-        console.log(`Completed scraping job ${job.id}`)
-        return { message: 'Scraping completed successfully', jobId: job.id }
+        console.log(`Processing scraping job ${job.id}:`, job.data);
+
+        const { pageLinks } = job.data;
+        console.log('MEDid', pageLinks);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        console.log(`Completed scraping job ${job.id}`);
+        return { message: 'Scraping completed successfully', jobId: job.id };
       },
       {
         connection: connection.duplicate(),
-        concurrency: 2
+        concurrency: 2,
       }
-    )
+    );
 
     scrapingWorker.on('completed', (job) => {
-      console.log(`✅ Job ${job.id} completed successfully`)
-    })
+      console.log(`✅ Job ${job.id} completed successfully`);
+    });
 
     scrapingWorker.on('failed', (job, err) => {
-      console.error(`❌ Job ${job?.id} failed:`, err.message)
-    })
+      console.error(`❌ Job ${job?.id} failed:`, err.message);
+    });
 
-    console.log('✅ Worker initialized successfully')
+    console.log('✅ Worker initialized successfully');
   } catch (error) {
-    console.error('❌ Failed to initialize worker:', error)
+    console.error('❌ Failed to initialize worker:', error);
   }
-}
+};
 
-export { connection as redisConnection, scrapingWorker }
+export { connection as redisConnection, scrapingWorker };
