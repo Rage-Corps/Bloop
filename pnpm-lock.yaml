@@ -75,6 +75,12 @@ importers:
 
   apps/backend2:
     dependencies:
+      '@fastify/swagger':
+        specifier: ^9.5.1
+        version: 9.5.1
+      '@fastify/swagger-ui':
+        specifier: ^5.2.3
+        version: 5.2.3
       fastify:
         specifier: ^5.4.0
         version: 5.4.0
