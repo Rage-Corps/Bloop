@@ -1,376 +1,334 @@
-import { FastifyInstance } from 'fastify';
-import { mediaDatabase } from '../database/index.js';
-import {
-  CreateMediaSchema,
-  UpdateMediaSchema,
-  MediaParamsSchema,
-  MediaQuerySchema,
-  type CreateMedia,
-  type UpdateMedia,
-  type MediaParams,
-  type MediaQuery,
-} from '../schemas/media.js';
-import { NotFoundError, ConflictError } from '../utils/index.js';
+import { FastifyInstance } from 'fastify'
+import { MediaHelper } from '../helpers/mediaHelper'
+import type { MediaQuery } from '@bloop/shared-types'
 
-export async function mediaRoutes(fastify: FastifyInstance) {
-  // Get all media with optional filtering
-  fastify.get<{ Querystring: MediaQuery }>(
-    '/media',
-    {
-      schema: {
-        tags: ['media'],
-        summary: 'Get all media items',
-        description:
-          'Retrieve all media items with optional filtering and pagination',
-        querystring: {
-          type: 'object',
-          properties: {
-            limit: {
-              type: 'integer',
-              minimum: 1,
-              maximum: 100,
-              description: 'Number of items to return (max 100)',
-            },
-            offset: {
-              type: 'integer',
-              minimum: 0,
-              description: 'Number of items to skip',
-            },
-            source: {
-              type: 'string',
-              description: 'Filter by source name (case-insensitive)',
-            },
-          },
-        },
-        response: {
-          200: {
-            type: 'object',
-            properties: {
-              data: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'string' },
-                    name: { type: 'string' },
-                    description: { type: 'string' },
-                    thumbnailUrl: { type: 'string' },
-                    pageUrl: { type: 'string' },
-                    categories: { 
-                      type: 'array',
-                      items: { type: 'string' }
-                    },
-                    sources: {
-                      type: 'array',
-                      items: {
-                        type: 'object',
-                        properties: {
-                          id: { type: 'string' },
-                          mediaId: { type: 'string' },
-                          sourceName: { type: 'string' },
-                          url: { type: 'string' }
-                        }
-                      }
-                    },
-                  },
-                },
-              },
-              total: { type: 'integer' },
-              filtered: { type: 'integer' },
-            },
-          },
-        },
+const mediaHelper = new MediaHelper()
+
+export default async function mediaRoutes(fastify: FastifyInstance) {
+  fastify.get('/media', {
+    schema: {
+      description: 'Get paginated media items with sources and categories',
+      tags: ['media'],
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'number', default: 20 },
+          offset: { type: 'number', default: 0 },
+          source: { type: 'string' }
+        }
       },
-    },
-    async (request, reply) => {
-      const query = MediaQuerySchema.parse(request.query);
-      const media = mediaDatabase.getAllMedia();
-
-      // Apply filtering
-      let filteredMedia = media;
-      if (query.source) {
-        filteredMedia = media.filter((item) =>
-          item.pageUrl.toLowerCase().includes(query.source!.toLowerCase())
-        );
-      }
-
-      // Apply pagination
-      if (query.limit || query.offset) {
-        const offset = query.offset || 0;
-        const limit = query.limit || 10;
-        filteredMedia = filteredMedia.slice(offset, offset + limit);
-      }
-
-      return {
-        data: filteredMedia,
-        total: media.length,
-        filtered: filteredMedia.length,
-      };
-    }
-  );
-
-  // Get specific media by uniqueId
-  fastify.get<{ Params: MediaParams }>(
-    '/media/:id',
-    {
-      schema: {
-        tags: ['media'],
-        summary: 'Get media by ID',
-        description: 'Retrieve a specific media item by its unique ID',
-        params: {
+      response: {
+        200: {
           type: 'object',
           properties: {
-            id: { type: 'string', description: 'Media unique ID' },
-          },
-          required: ['id'],
-        },
-        response: {
-          200: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              name: { type: 'string' },
-              description: { type: 'string' },
-              thumbnailUrl: { type: 'string' },
-              pageUrl: { type: 'string' },
-              categories: { 
-                type: 'array',
-                items: { type: 'string' }
-              },
-              sources: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'string' },
-                    mediaId: { type: 'string' },
-                    sourceName: { type: 'string' },
-                    url: { type: 'string' }
+            data: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  name: { type: 'string' },
+                  description: { type: 'string' },
+                  thumbnailUrl: { type: 'string' },
+                  pageUrl: { type: 'string' },
+                  createdAt: { type: 'string' },
+                  sources: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string' },
+                        sourceName: { type: 'string' },
+                        url: { type: 'string' }
+                      }
+                    }
+                  },
+                  categories: {
+                    type: 'array',
+                    items: { type: 'string' }
                   }
                 }
-              },
+              }
             },
-          },
-          404: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-              code: { type: 'string' },
-            },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      const params = MediaParamsSchema.parse(request.params);
-      const media = mediaDatabase.getMediaById(params.id);
-
-      if (!media) {
-        throw new NotFoundError('Media');
+            total: { type: 'number' },
+            limit: { type: 'number' },
+            offset: { type: 'number' }
+          }
+        }
       }
-
-      return media;
     }
-  );
+  }, async (request, reply) => {
+    const query = request.query as MediaQuery
+    const result = await mediaHelper.getMediaWithPagination(query)
+    return result
+  })
 
-  // Create new media
-  fastify.post<{ Body: CreateMedia }>(
-    '/media',
-    {
-      schema: {
-        tags: ['media'],
-        summary: 'Create new media',
-        description: 'Create a new media item',
-        body: {
+  fastify.get('/media/:id', {
+    schema: {
+      description: 'Get media item by ID with sources and categories',
+      tags: ['media'],
+      params: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' }
+        }
+      },
+      response: {
+        200: {
           type: 'object',
           properties: {
-            uniqueId: {
-              type: 'string',
-              pattern: '^[a-zA-Z0-9_-]+$',
-              maxLength: 100,
-            },
-            name: { type: 'string', maxLength: 200 },
-            description: { type: 'string', maxLength: 1000 },
-            url: { type: 'string', format: 'uri', maxLength: 500 },
-            source: { type: 'string', maxLength: 100 },
-            thumbnail: { type: 'string', format: 'uri', maxLength: 500 },
-            categories: { 
+            id: { type: 'string' },
+            name: { type: 'string' },
+            description: { type: 'string' },
+            thumbnailUrl: { type: 'string' },
+            pageUrl: { type: 'string' },
+            createdAt: { type: 'string' },
+            sources: {
               type: 'array',
-              items: { type: 'string', maxLength: 50 },
-              description: 'Array of category names for the media item'
-            },
-          },
-          required: [
-            'uniqueId',
-            'name',
-            'description',
-            'url',
-            'source',
-            'thumbnail',
-          ],
-        },
-        response: {
-          201: {
-            type: 'object',
-            properties: {
-              message: { type: 'string' },
-              data: {
+              items: {
                 type: 'object',
                 properties: {
-                  uniqueId: { type: 'string' },
-                  name: { type: 'string' },
-                  description: { type: 'string' },
-                  url: { type: 'string' },
-                  source: { type: 'string' },
-                  thumbnail: { type: 'string' },
-                  categories: { 
-                    type: 'array',
-                    items: { type: 'string' }
-                  },
-                },
-              },
+                  id: { type: 'string' },
+                  sourceName: { type: 'string' },
+                  url: { type: 'string' }
+                }
+              }
             },
-          },
-          409: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-              code: { type: 'string' },
-            },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      const mediaData = CreateMediaSchema.parse(request.body);
-
-      // Check if media with this id already exists
-      if (mediaDatabase.mediaExists(mediaData.id)) {
-        throw new ConflictError('Media with this id already exists');
-      }
-
-      mediaDatabase.addMedia(mediaData);
-
-      reply.status(201).send({
-        message: 'Media created successfully',
-        data: mediaData,
-      });
-    }
-  );
-
-  // Update existing media
-  fastify.put<{ Params: MediaParams; Body: UpdateMedia }>(
-    '/media/:id',
-    {
-      schema: {
-        tags: ['media'],
-        summary: 'Update media',
-        description: 'Update an existing media item',
-        params: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', description: 'Media unique ID' },
-          },
-          required: ['id'],
-        },
-        body: {
-          type: 'object',
-          properties: {
-            name: { type: 'string', maxLength: 200 },
-            description: { type: 'string', maxLength: 1000 },
-            url: { type: 'string', format: 'uri', maxLength: 500 },
-            source: { type: 'string', maxLength: 100 },
-            thumbnail: { type: 'string', format: 'uri', maxLength: 500 },
-          },
-        },
-        response: {
-          200: {
-            type: 'object',
-            properties: {
-              message: { type: 'string' },
-              data: {
+            categories: {
+              type: 'array',
+              items: {
                 type: 'object',
                 properties: {
-                  uniqueId: { type: 'string' },
-                  name: { type: 'string' },
-                  description: { type: 'string' },
-                  url: { type: 'string' },
-                  source: { type: 'string' },
-                  thumbnail: { type: 'string' },
-                  categories: { 
-                    type: 'array',
-                    items: { type: 'string' }
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      const params = MediaParamsSchema.parse(request.params);
-      const updates = UpdateMediaSchema.parse(request.body);
-
-      // Check if media exists
-      if (!mediaDatabase.mediaExists(params.id)) {
-        throw new NotFoundError('Media');
+                  id: { type: 'string' },
+                  category: { type: 'string' }
+                }
+              }
+            }
+          }
+        }
       }
-
-      const success = mediaDatabase.updateMedia(params.id, updates);
-      if (!success) {
-        throw new Error('No changes made to media');
-      }
-
-      const updatedMedia = mediaDatabase.getMediaById(params.id);
-      return {
-        message: 'Media updated successfully',
-        data: updatedMedia,
-      };
     }
-  );
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    
+    const mediaItem = await mediaHelper.getMediaById(id)
+    if (!mediaItem) {
+      reply.code(404)
+      return { error: 'Media not found' }
+    }
+    
+    return mediaItem
+  })
 
-  // Delete media
-  fastify.delete<{ Params: MediaParams }>(
-    '/media/:id',
-    {
-      schema: {
-        tags: ['media'],
-        summary: 'Delete media',
-        description: 'Delete a media item by its unique ID',
-        params: {
+  fastify.post('/media', {
+    schema: {
+      description: 'Create a new media item',
+      tags: ['media'],
+      body: {
+        type: 'object',
+        required: ['name', 'description', 'thumbnailUrl', 'pageUrl'],
+        properties: {
+          name: { type: 'string' },
+          description: { type: 'string' },
+          thumbnailUrl: { type: 'string' },
+          pageUrl: { type: 'string' },
+          sources: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                sourceName: { type: 'string' },
+                url: { type: 'string' }
+              }
+            }
+          },
+          categories: {
+            type: 'array',
+            items: { type: 'string' }
+          }
+        }
+      },
+      response: {
+        201: {
           type: 'object',
           properties: {
-            id: { type: 'string', description: 'Media unique ID' },
-          },
-          required: ['id'],
-        },
-        response: {
-          200: {
-            type: 'object',
-            properties: {
-              message: { type: 'string' },
-            },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      const params = MediaParamsSchema.parse(request.params);
-
-      // Check if media exists
-      if (!mediaDatabase.mediaExists(params.id)) {
-        throw new NotFoundError('Media');
+            id: { type: 'string' },
+            name: { type: 'string' },
+            description: { type: 'string' },
+            thumbnailUrl: { type: 'string' },
+            pageUrl: { type: 'string' },
+            createdAt: { type: 'string' }
+          }
+        }
       }
-
-      const success = mediaDatabase.deleteMedia(params.id);
-      if (!success) {
-        throw new Error('Failed to delete media');
-      }
-
-      return {
-        message: 'Media deleted successfully',
-      };
     }
-  );
+  }, async (request, reply) => {
+    const { name, description, thumbnailUrl, pageUrl, sources = [], categories = [] } = request.body as {
+      name: string
+      description: string
+      thumbnailUrl: string
+      pageUrl: string
+      sources?: { sourceName: string; url: string }[]
+      categories?: string[]
+    }
+    
+    const newMedia = await mediaHelper.createMedia({
+      name,
+      description,
+      thumbnailUrl,
+      pageUrl,
+      sources,
+      categories
+    })
+    
+    reply.code(201)
+    return newMedia
+  })
+
+  fastify.put('/media/:id', {
+    schema: {
+      description: 'Update a media item',
+      tags: ['media'],
+      params: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' }
+        }
+      },
+      body: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          description: { type: 'string' },
+          thumbnailUrl: { type: 'string' },
+          pageUrl: { type: 'string' }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            name: { type: 'string' },
+            description: { type: 'string' },
+            thumbnailUrl: { type: 'string' },
+            pageUrl: { type: 'string' },
+            createdAt: { type: 'string' }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const updateData = request.body as {
+      name?: string
+      description?: string
+      thumbnailUrl?: string
+      pageUrl?: string
+    }
+    
+    const updatedMedia = await mediaHelper.updateMedia(id, updateData)
+    if (!updatedMedia) {
+      reply.code(404)
+      return { error: 'Media not found' }
+    }
+    
+    return updatedMedia
+  })
+
+  fastify.delete('/media/:id', {
+    schema: {
+      description: 'Delete a media item',
+      tags: ['media'],
+      params: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            message: { type: 'string' }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    
+    const deleted = await mediaHelper.deleteMedia(id)
+    if (!deleted) {
+      reply.code(404)
+      return { error: 'Media not found' }
+    }
+    
+    return { message: 'Media deleted successfully' }
+  })
+
+  fastify.post('/media/:id/sources', {
+    schema: {
+      description: 'Add a source to a media item',
+      tags: ['media'],
+      params: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' }
+        }
+      },
+      body: {
+        type: 'object',
+        required: ['sourceName', 'url'],
+        properties: {
+          sourceName: { type: 'string' },
+          url: { type: 'string' }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const { sourceName, url } = request.body as { sourceName: string; url: string }
+    
+    const newSource = await mediaHelper.addSourceToMedia(id, sourceName, url)
+    if (!newSource) {
+      reply.code(404)
+      return { error: 'Media not found' }
+    }
+    
+    reply.code(201)
+    return newSource
+  })
+
+  fastify.post('/media/:id/categories', {
+    schema: {
+      description: 'Add a category to a media item',
+      tags: ['media'],
+      params: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' }
+        }
+      },
+      body: {
+        type: 'object',
+        required: ['category'],
+        properties: {
+          category: { type: 'string' }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const { category } = request.body as { category: string }
+    
+    const newCategory = await mediaHelper.addCategoryToMedia(id, category)
+    if (!newCategory) {
+      reply.code(404)
+      return { error: 'Media not found' }
+    }
+    
+    reply.code(201)
+    return newCategory
+  })
 }

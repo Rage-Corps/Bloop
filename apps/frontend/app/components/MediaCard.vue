@@ -55,15 +55,15 @@
 </template>
 
 <script setup lang="ts">
-import type { Media } from '@bloop/shared-types';
+import type { MediaWithMetadata } from '@bloop/shared-types';
 
 interface Props {
-  item: Media;
+  item: MediaWithMetadata;
 }
 
 defineProps<Props>();
 defineEmits<{
-  click: [item: Media];
+  click: [item: MediaWithMetadata];
 }>();
 
 const handleImageError = (event: Event) => {
