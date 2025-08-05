@@ -7,3 +7,9 @@ apps/backend/data/database.db
 apps/frontend/data/
 apps/frontend/auth.db
 .claude
+
+# Build outputs
+dist/
+**/dist/
+apps/*/dist/
+packages/*/dist/

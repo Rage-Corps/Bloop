@@ -23,6 +23,9 @@ importers:
 
   apps/backend:
     dependencies:
+      '@bloop/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
       '@bull-board/api':
         specifier: ^6.12.0
         version: 6.12.0(@bull-board/ui@6.12.0)
@@ -93,6 +96,9 @@ importers:
 
   apps/frontend:
     dependencies:
+      '@bloop/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
       '@nuxt/content':
         specifier: 3.6.3
         version: 3.6.3(better-sqlite3@11.10.0)(drizzle-orm@0.44.4(@prisma/client@5.22.0(prisma@5.22.0))(@types/better-sqlite3@7.6.13)(@types/pg@8.15.5)(better-sqlite3@11.10.0)(kysely@0.28.4)(postgres@3.4.7)(prisma@5.22.0))(magicast@0.3.5)(vue-component-type-helpers@3.0.5)
@@ -120,6 +126,9 @@ importers:
       eslint:
         specifier: ^9.32.0
         version: 9.32.0(jiti@2.5.1)
+      lodash-es:
+        specifier: ^4.17.21
+        version: 4.17.21
       nuxt:
         specifier: ^4.0.1
         version: 4.0.3(@netlify/blobs@9.1.2)(@parcel/watcher@2.5.1)(@types/node@24.2.0)(@vue/compiler-sfc@3.5.18)(better-sqlite3@11.10.0)(db0@0.3.2(better-sqlite3@11.10.0)(drizzle-orm@0.44.4(@prisma/client@5.22.0(prisma@5.22.0))(@types/better-sqlite3@7.6.13)(@types/pg@8.15.5)(better-sqlite3@11.10.0)(kysely@0.28.4)(postgres@3.4.7)(prisma@5.22.0)))(drizzle-orm@0.44.4(@prisma/client@5.22.0(prisma@5.22.0))(@types/better-sqlite3@7.6.13)(@types/pg@8.15.5)(better-sqlite3@11.10.0)(kysely@0.28.4)(postgres@3.4.7)(prisma@5.22.0))(eslint@9.32.0(jiti@2.5.1))(ioredis@5.7.0)(lightningcss@1.30.1)(magicast@0.3.5)(optionator@0.9.4)(rollup@4.46.2)(terser@5.43.1)(tsx@4.20.3)(typescript@5.9.2)(vite@7.0.6(@types/node@24.2.0)(jiti@2.5.1)(lightningcss@1.30.1)(terser@5.43.1)(tsx@4.20.3)(yaml@2.8.1))(yaml@2.8.1)
@@ -139,6 +148,15 @@ importers:
       '@types/lodash':
         specifier: ^4.17.20
         version: 4.17.20
+      '@types/lodash-es':
+        specifier: ^4.17.12
+        version: 4.17.12
+
+  packages/shared-types:
+    devDependencies:
+      typescript:
+        specifier: ^5.8.3
+        version: 5.9.2
 
 packages:
 
@@ -2119,6 +2137,9 @@ packages:
 
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
+
+  '@types/lodash-es@4.17.12':
+    resolution: {integrity: sha512-0NgftHUcV4v34VhXm8QBSftKVXtbkBG3ViCjs6+eJ5a6y6Mi/jiFGPc1sC7QK+9BFhWrURE3EOggmWaSxL9OzQ==}
 
   '@types/lodash@4.17.20':
     resolution: {integrity: sha512-H3MHACvFUEiujabxhaI/ImO6gUrd8oOurg7LQtS7mbwIXA/cUqWrvBsaeJ23aZEPk1TAYkurjfMbSELfoCXlGA==}
@@ -9314,6 +9335,10 @@ snapshots:
       - supports-color
 
   '@types/json-schema@7.0.15': {}
+
+  '@types/lodash-es@4.17.12':
+    dependencies:
+      '@types/lodash': 4.17.20
 
   '@types/lodash@4.17.20': {}
 

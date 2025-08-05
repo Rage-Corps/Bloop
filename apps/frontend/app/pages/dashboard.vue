@@ -102,8 +102,8 @@
 </template>
 
 <script setup lang="ts">
-import { debounce } from 'lodash';
-import type { Media, MediaWithMetadata, MediaListResponse } from '@bloop/shared-types';
+import { debounce } from 'lodash-es';
+import type { MediaListResponse, MediaWithMetadata } from '@bloop/shared-types';
 
 // Use the dashboard layout
 definePageMeta({
@@ -130,7 +130,6 @@ const offset = computed(() => (currentPage.value - 1) * itemsPerPage);
 
 // Methods
 const loadMedia = async () => {
-  console.log('OFFSET', offset.value);
   try {
     const response = await fetchMedia({
       limit: itemsPerPage,
@@ -138,7 +137,6 @@ const loadMedia = async () => {
       source: searchQuery.value || undefined,
     });
     mediaData.value = response;
-    console.log('RES', response);
   } catch (err) {
     console.error('Failed to load media:', err);
   }
@@ -162,8 +160,8 @@ const debouncedSearch = debounce(() => {
   loadMedia();
 }, 500);
 
-const openMediaDetail = (item: Media) => {
-  selectedMedia.value = item as MediaWithMetadata;
+const openMediaDetail = (item: MediaWithMetadata) => {
+  selectedMedia.value = item;
   showMediaDetail.value = true;
 };
 

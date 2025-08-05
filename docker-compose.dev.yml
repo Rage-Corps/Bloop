@@ -50,6 +50,9 @@ services:
       - DATABASE_URL=postgresql://dev_user:dev_password@postgres:5432/backend2_dev
       - REDIS_URL=redis://redis:6379
       - BASE_SCRAPE_URL=https://www.freeomovie.to/category/full-movie/
+      - HOST=localhost
+      - PORT=3001
+      - AUTH_SECRET=fallback-secret-key
     networks:
       - dev-network
     depends_on:

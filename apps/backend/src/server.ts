@@ -6,7 +6,7 @@ import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { FastifyAdapter } from '@bull-board/fastify';
 import { scrapingQueue, initializeWorker } from './jobs/queue';
-import { auth } from '../auth';
+import { auth } from './auth';
 
 const start = async () => {
   const fastify = Fastify({
@@ -55,13 +55,13 @@ const start = async () => {
 
   // Register Better Auth handler
   fastify.route({
-    method: ["GET", "POST"],
-    url: "/api/auth/*",
+    method: ['GET', 'POST'],
+    url: '/api/auth/*',
     async handler(request, reply) {
       try {
         // Construct request URL
         const url = new URL(request.url, `http://${request.headers.host}`);
-        
+
         // Convert Fastify headers to standard Headers object
         const headers = new Headers();
         Object.entries(request.headers).forEach(([key, value]) => {
@@ -69,11 +69,16 @@ const start = async () => {
         });
 
         // Create Fetch API-compatible request
-        const req = new Request(url.toString(), {
+        const requestInit: RequestInit = {
           method: request.method,
           headers,
-          body: request.body ? JSON.stringify(request.body) : undefined,
-        });
+        };
+        
+        if (request.method !== 'GET' && request.method !== 'HEAD' && request.body) {
+          requestInit.body = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
+        }
+        
+        const req = new Request(url.toString(), requestInit);
 
         // Process authentication request
         const response = await auth.handler(req);
@@ -82,15 +87,14 @@ const start = async () => {
         reply.status(response.status);
         response.headers.forEach((value, key) => reply.header(key, value));
         reply.send(response.body ? await response.text() : null);
-
       } catch (error) {
-        fastify.log.error("Authentication Error:", error);
-        reply.status(500).send({ 
-          error: "Internal authentication error",
-          code: "AUTH_FAILURE"
+        fastify.log.error('Authentication Error:', error);
+        reply.status(500).send({
+          error: 'Internal authentication error',
+          code: 'AUTH_FAILURE',
         });
       }
-    }
+    },
   });
 
   const serverAdapter = new FastifyAdapter();
@@ -105,9 +109,9 @@ const start = async () => {
     prefix: '/admin/queues',
   });
 
-  await fastify.register(healthRoutes);
-  await fastify.register(mediaRoutes);
-  await fastify.register(scrapingRoutes);
+  await fastify.register(healthRoutes, { prefix: '/api' });
+  await fastify.register(mediaRoutes, { prefix: '/api' });
+  await fastify.register(scrapingRoutes, { prefix: '/api' });
 
   await initializeWorker();
 

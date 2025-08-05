@@ -1,33 +1,66 @@
 import { FastifyInstance } from 'fastify'
 import { MediaHelper } from '../helpers/mediaHelper'
+import type { MediaQuery } from '@bloop/shared-types'
 
 const mediaHelper = new MediaHelper()
 
 export default async function mediaRoutes(fastify: FastifyInstance) {
   fastify.get('/media', {
     schema: {
-      description: 'Get all media items',
+      description: 'Get paginated media items with sources and categories',
       tags: ['media'],
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'number', default: 20 },
+          offset: { type: 'number', default: 0 },
+          source: { type: 'string' }
+        }
+      },
       response: {
         200: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              name: { type: 'string' },
-              description: { type: 'string' },
-              thumbnailUrl: { type: 'string' },
-              pageUrl: { type: 'string' },
-              createdAt: { type: 'string' }
-            }
+          type: 'object',
+          properties: {
+            data: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  name: { type: 'string' },
+                  description: { type: 'string' },
+                  thumbnailUrl: { type: 'string' },
+                  pageUrl: { type: 'string' },
+                  createdAt: { type: 'string' },
+                  sources: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string' },
+                        sourceName: { type: 'string' },
+                        url: { type: 'string' }
+                      }
+                    }
+                  },
+                  categories: {
+                    type: 'array',
+                    items: { type: 'string' }
+                  }
+                }
+              }
+            },
+            total: { type: 'number' },
+            limit: { type: 'number' },
+            offset: { type: 'number' }
           }
         }
       }
     }
   }, async (request, reply) => {
-    const allMedia = await mediaHelper.getAllMedia()
-    return allMedia
+    const query = request.query as MediaQuery
+    const result = await mediaHelper.getMediaWithPagination(query)
+    return result
   })
 
   fastify.get('/media/:id', {

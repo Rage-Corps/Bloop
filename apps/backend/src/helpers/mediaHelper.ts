@@ -1,7 +1,8 @@
 import { db } from '../db/connection';
 import { media, sources, categories } from '../db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, count, ilike } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
+import type { MediaListResponse, MediaQuery } from '@bloop/shared-types';
 
 export interface CreateMediaInput {
   name: string;
@@ -45,6 +46,78 @@ export interface MediaWithDetails {
 export class MediaHelper {
   async getAllMedia(): Promise<any[]> {
     return await db.select().from(media);
+  }
+
+  async getMediaWithPagination(query: MediaQuery = {}): Promise<MediaListResponse> {
+    const { limit = 20, offset = 0, source } = query;
+    
+    // Build where conditions
+    let whereConditions;
+    if (source) {
+      whereConditions = ilike(media.name, `%${source}%`);
+    }
+
+    // Get total count
+    const totalResult = await db
+      .select({ count: count() })
+      .from(media)
+      .where(whereConditions);
+    
+    const total = totalResult[0]?.count || 0;
+
+    // Get paginated data with sources and categories
+    const mediaItems = await db
+      .select()
+      .from(media)
+      .where(whereConditions)
+      .limit(limit)
+      .offset(offset)
+      .orderBy(media.createdAt);
+
+    // Get sources and categories for all media items
+    const mediaIds = mediaItems.map(item => item.id);
+    
+    let allSources: any[] = [];
+    let allCategories: any[] = [];
+    
+    if (mediaIds.length > 0) {
+      allSources = await db
+        .select()
+        .from(sources)
+        .where(inArray(sources.mediaId, mediaIds));
+      
+      allCategories = await db
+        .select()
+        .from(categories)
+        .where(inArray(categories.mediaId, mediaIds));
+    }
+
+    // Group sources and categories by mediaId
+    const sourcesByMediaId = allSources.reduce((acc, source) => {
+      if (!acc[source.mediaId]) acc[source.mediaId] = [];
+      acc[source.mediaId].push(source);
+      return acc;
+    }, {} as Record<string, any[]>);
+
+    const categoriesByMediaId = allCategories.reduce((acc, category) => {
+      if (!acc[category.mediaId]) acc[category.mediaId] = [];
+      acc[category.mediaId].push(category.category);
+      return acc;
+    }, {} as Record<string, string[]>);
+
+    // Combine data
+    const data = mediaItems.map(item => ({
+      ...item,
+      sources: sourcesByMediaId[item.id] || [],
+      categories: categoriesByMediaId[item.id] || []
+    }));
+
+    return {
+      data,
+      total: Number(total),
+      limit,
+      offset
+    };
   }
 
   async getMediaById(id: string): Promise<MediaWithDetails | null> {

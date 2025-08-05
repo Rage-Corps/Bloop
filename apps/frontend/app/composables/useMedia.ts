@@ -1,10 +1,4 @@
-import type { Media, MediaListResponse, MediaQuery as SharedMediaQuery } from '@bloop/shared-types';
-
-interface MediaQuery {
-  limit?: number;
-  offset?: number;
-  source?: string;
-}
+import type { MediaWithMetadata, MediaListResponse, MediaQuery } from '@bloop/shared-types';
 
 export const useMedia = () => {
   const loading = ref(false);
@@ -34,12 +28,12 @@ export const useMedia = () => {
     }
   };
 
-  const fetchMediaById = async (id: string): Promise<Media> => {
+  const fetchMediaById = async (id: string): Promise<MediaWithMetadata> => {
     loading.value = true;
     error.value = null;
 
     try {
-      const response = await $fetch<Media>(
+      const response = await $fetch<MediaWithMetadata>(
         `http://localhost:3001/api/media/${id}`
       );
       return response;
