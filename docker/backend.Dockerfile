@@ -13,7 +13,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/backend/package.json ./apps/backend/package.json
 
 # Install dependencies (this will install for the entire workspace)
-RUN pnpm install --frozen-lockfile
+RUN pnpm install 
 
 # Copy backend source code
 COPY apps/backend ./apps/backend
