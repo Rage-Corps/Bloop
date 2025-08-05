@@ -1,6 +1,6 @@
 import { db } from '../db/connection';
 import { media, sources, categories } from '../db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
 export interface CreateMediaInput {
@@ -231,5 +231,91 @@ export class MediaHelper {
       .from(media)
       .where(eq(media.pageUrl, pageUrl));
     return existing.length > 0;
+  }
+
+  async checkExistingPageLinks(pageLinks: string[]): Promise<{
+    existingCount: number;
+    newLinks: string[];
+    existingLinks: string[];
+  }> {
+    if (pageLinks.length === 0) {
+      return {
+        existingCount: 0,
+        newLinks: [],
+        existingLinks: []
+      };
+    }
+
+    // Check which links already exist in the database
+    const existingMedia = await db
+      .select({ pageUrl: media.pageUrl })
+      .from(media)
+      .where(inArray(media.pageUrl, pageLinks));
+
+    const existingLinks = existingMedia.map(item => item.pageUrl);
+    const newLinks = pageLinks.filter(link => !existingLinks.includes(link));
+
+    return {
+      existingCount: existingLinks.length,
+      newLinks,
+      existingLinks
+    };
+  }
+
+  async upsertMedia(input: CreateMediaInput): Promise<any> {
+    // Check if media already exists based on pageUrl
+    const existingMedia = await db
+      .select()
+      .from(media)
+      .where(eq(media.pageUrl, input.pageUrl));
+
+    if (existingMedia.length > 0) {
+      // Update existing media
+      const mediaId = existingMedia[0].id;
+      
+      // Update media record
+      const updatedMedia = await db
+        .update(media)
+        .set({
+          name: input.name,
+          description: input.description,
+          thumbnailUrl: input.thumbnailUrl,
+          pageUrl: input.pageUrl
+        })
+        .where(eq(media.id, mediaId))
+        .returning();
+
+      // Remove existing sources and categories
+      await db.delete(sources).where(eq(sources.mediaId, mediaId));
+      await db.delete(categories).where(eq(categories.mediaId, mediaId));
+
+      // Add new sources if provided
+      if (input.sources && input.sources.length > 0) {
+        await db.insert(sources).values(
+          input.sources.map((source) => ({
+            id: randomUUID(),
+            mediaId,
+            sourceName: source.sourceName,
+            url: source.url,
+          }))
+        );
+      }
+
+      // Add new categories if provided
+      if (input.categories && input.categories.length > 0) {
+        await db.insert(categories).values(
+          input.categories.map((category) => ({
+            id: randomUUID(),
+            mediaId,
+            category,
+          }))
+        );
+      }
+
+      return updatedMedia[0];
+    } else {
+      // Create new media
+      return await this.createMedia(input);
+    }
   }
 }
