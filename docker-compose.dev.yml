@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  backend2:
+    build:
+      context: .
+      dockerfile: dockerfiles/backend2.Dockerfile
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./apps/backend2/src:/app/apps/backend2/src
+      - ./apps/backend2/package.json:/app/apps/backend2/package.json
+    environment:
+      - NODE_ENV=development
+    networks:
+      - dev-network
+    restart: unless-stopped
+
+networks:
+  dev-network:
+    driver: bridge
