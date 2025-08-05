@@ -22,6 +22,20 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: backend2-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - dev-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   backend2:
     build:
       context: .
@@ -34,10 +48,13 @@ services:
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://dev_user:dev_password@postgres:5432/backend2_dev
+      - REDIS_URL=redis://redis:6379
     networks:
       - dev-network
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: unless-stopped
 
