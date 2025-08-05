@@ -1,6 +1,27 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: backend2-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=backend2_dev
+      - POSTGRES_USER=dev_user
+      - POSTGRES_PASSWORD=dev_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - dev-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev_user -d backend2_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend2:
     build:
       context: .
@@ -12,9 +33,16 @@ services:
       - ./apps/backend2/package.json:/app/apps/backend2/package.json
     environment:
       - NODE_ENV=development
+      - DATABASE_URL=postgresql://dev_user:dev_password@postgres:5432/backend2_dev
     networks:
       - dev-network
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  postgres_data:
 
 networks:
   dev-network:
