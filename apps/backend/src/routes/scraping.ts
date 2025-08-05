@@ -154,4 +154,49 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
       };
     }
   );
+
+  fastify.post(
+    '/scraping/stop',
+    {
+      schema: {
+        description: 'Cancel all waiting scraping jobs',
+        tags: ['scraping'],
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              message: { type: 'string' },
+              cancelledJobs: { type: 'number' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        // Get all waiting jobs
+        const waitingJobs = await scrapingQueue.getWaiting();
+        
+        // Cancel each waiting job
+        const cancelPromises = waitingJobs.map(job => job.remove());
+        await Promise.all(cancelPromises);
+        
+        const cancelledCount = waitingJobs.length;
+        
+        fastify.log.info(`🛑 Cancelled ${cancelledCount} waiting scraping jobs`);
+        
+        return {
+          message: `Successfully cancelled ${cancelledCount} waiting jobs`,
+          cancelledJobs: cancelledCount,
+        };
+      } catch (error) {
+        fastify.log.error('Error cancelling scraping jobs:', error);
+        reply.code(500);
+        return {
+          message: 'Failed to cancel scraping jobs',
+          cancelledJobs: 0,
+        };
+      }
+    }
+  );
 }
