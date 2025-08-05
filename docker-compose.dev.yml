@@ -36,15 +36,15 @@ services:
       timeout: 3s
       retries: 5
 
-  backend2:
+  backend:
     build:
       context: .
-      dockerfile: dockerfiles/backend2.Dockerfile
+      dockerfile: docker/backend.Dockerfile
     ports:
       - '3001:3001'
     volumes:
-      - ./apps/backend2:/app/apps/backend2
-      - /app/apps/backend2/node_modules
+      - ./apps/backend:/app/apps/backend
+      - /app/apps/backend/node_modules
       - /app/node_modules
     environment:
       - NODE_ENV=development

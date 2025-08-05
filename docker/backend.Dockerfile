@@ -9,20 +9,20 @@ WORKDIR /app
 # Copy workspace configuration files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Copy backend2 package.json
-COPY apps/backend2/package.json ./apps/backend2/package.json
+# Copy backend package.json
+COPY apps/backend/package.json ./apps/backend/package.json
 
 # Install dependencies (this will install for the entire workspace)
 RUN pnpm install --frozen-lockfile
 
-# Copy backend2 source code
-COPY apps/backend2 ./apps/backend2
+# Copy backend source code
+COPY apps/backend ./apps/backend
 
 # Expose the port
 EXPOSE 3001
 
-# Set working directory to backend2 for running the app
-WORKDIR /app/apps/backend2
+# Set working directory to backend for running the app
+WORKDIR /app/apps/backend
 
 # Run development server
 CMD ["pnpm", "dev"]

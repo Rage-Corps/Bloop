@@ -1,63 +1,41 @@
 import { FastifyInstance } from 'fastify';
-import { scrapingService } from '../services/scraping.js';
-import {
-  StartScrapingSchema,
-  ScrapingJobParamsSchema,
-  type StartScraping,
-  type ScrapingJobParams,
-} from '../schemas/scraping.js';
-import { NotFoundError } from '../utils/index.js';
+import { scrapingQueue } from '../jobs/queue';
+import { randomUUID } from 'crypto';
+import { ScrapingUtils } from '../utils/ScrapingUtils';
 
-export async function scrapingRoutes(fastify: FastifyInstance) {
-  // Start a new scraping operation
-  fastify.post<{ Body: StartScraping }>(
+export default async function scrapingRoutes(fastify: FastifyInstance) {
+  fastify.post(
     '/scraping/start',
     {
       schema: {
+        description: 'Start a new scraping job',
         tags: ['scraping'],
-        summary: 'Start a new web scraping operation',
-        description: 'Begin scraping a website for media content',
         body: {
           type: 'object',
           properties: {
-            options: {
-              type: 'object',
-              properties: {
-                waitTime: {
-                  type: 'integer',
-                  minimum: 0,
-                  maximum: 10000,
-                  default: 1000,
-                  description: 'Wait time between requests in milliseconds (default: 1000)',
-                },
-                force: {
-                  type: 'boolean',
-                  default: false,
-                  description: 'Bypass early termination checks - process all pages even if links already exist (default: false)',
-                },
-              },
+            maxPages: { type: 'number', minimum: 1, maximum: 100 },
+            forceMode: { type: 'boolean', default: false },
+            waitTime: {
+              type: 'number',
+              minimum: 100,
+              maximum: 10000,
+              default: 1000,
             },
           },
         },
         response: {
-          200: {
+          201: {
             type: 'object',
             properties: {
+              jobId: { type: 'string' },
               message: { type: 'string' },
-              job: {
+              data: {
                 type: 'object',
                 properties: {
-                  id: { type: 'string' },
-                  url: { type: 'string' },
-                  source: { type: 'string' },
-                  status: { type: 'string', enum: ['pending', 'running', 'completed', 'failed'] },
-                  startedAt: { type: 'string' },
-                  completedAt: { type: 'string' },
-                  itemsFound: { type: 'integer' },
-                  itemsProcessed: { type: 'integer' },
-                  error: { type: 'string' },
+                  maxPages: { type: 'number' },
+                  forceMode: { type: 'boolean' },
+                  waitTime: { type: 'number' },
                 },
-                required: ['id', 'url', 'source', 'status', 'startedAt', 'itemsFound', 'itemsProcessed'],
               },
             },
           },
@@ -65,223 +43,114 @@ export async function scrapingRoutes(fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const scrapingRequest = StartScrapingSchema.parse(request.body);
-      const result = scrapingService.startScraping(scrapingRequest);
+      const {
+        maxPages,
+        forceMode = false,
+        waitTime = 1000,
+      } = request.body as {
+        maxPages?: number;
+        forceMode?: boolean;
+        waitTime?: number;
+      };
 
-      if ('error' in result) {
-        reply.status(500);
-        return {
-          error: result.error,
-          code: 'SCRAPING_CONFIG_ERROR',
-        };
+      const jobId = randomUUID();
+      const baseUrl = process.env.BASE_SCRAPE_URL;
+
+      if (!baseUrl) {
+        reply.code(400);
+        return { error: 'BASE_SCRAPE_URL not configured' };
       }
 
+      const scrapeUtil = new ScrapingUtils(baseUrl);
+
+      const { firstPageLinks, maxPageIndex } =
+        await scrapeUtil.getScrapingInfo();
+
+      const job = await scrapingQueue.add(
+        'scrape-page-1',
+        {
+          id: jobId,
+          baseUrl,
+          pageLinks: firstPageLinks,
+          forceMode,
+          waitTime,
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+        },
+        {
+          jobId,
+        }
+      );
+
+      for (let index = 2; index <= (maxPages ?? maxPageIndex); index++) {
+        const jobId = randomUUID();
+        const pageUrl = `${baseUrl}page/${index}`;
+        const pageLinks = await scrapeUtil.fetchAndExtractLinks(pageUrl);
+        await scrapingQueue.add(
+          `scrape-page-${index}`,
+          {
+            id: jobId,
+            baseUrl,
+            pageLinks,
+            forceMode,
+            waitTime,
+            status: 'pending',
+            createdAt: new Date().toISOString(),
+          },
+          {
+            jobId,
+          }
+        );
+      }
+
+      fastify.log.info(`🚀 Started scraping job ${job.id} for ${baseUrl}`);
+
+      reply.code(201);
       return {
+        jobId: job.id,
         message: 'Scraping job started successfully',
-        job: result,
+        data: {
+          maxPages,
+          forceMode,
+          waitTime,
+        },
       };
     }
   );
 
-  // Get scraping job status
-  fastify.get<{ Params: ScrapingJobParams }>(
-    '/scraping/jobs/:id',
-    {
-      schema: {
-        tags: ['scraping'],
-        summary: 'Get scraping job status',
-        description: 'Retrieve the status and details of a scraping job',
-        params: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', description: 'Scraping job ID' },
-          },
-          required: ['id'],
-        },
-        response: {
-          200: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              url: { type: 'string' },
-              source: { type: 'string' },
-              status: { type: 'string', enum: ['pending', 'running', 'completed', 'failed'] },
-              startedAt: { type: 'string' },
-              completedAt: { type: 'string' },
-              itemsFound: { type: 'integer' },
-              itemsProcessed: { type: 'integer' },
-              error: { type: 'string' },
-            },
-            required: ['id', 'url', 'source', 'status', 'startedAt', 'itemsFound', 'itemsProcessed'],
-          },
-          404: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-              code: { type: 'string' },
-            },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      const params = ScrapingJobParamsSchema.parse(request.params);
-      const job = scrapingService.getJob(params.id);
-
-      if (!job) {
-        throw new NotFoundError('Scraping job');
-      }
-
-      return job;
-    }
-  );
-
-  // Get all scraping jobs
   fastify.get(
     '/scraping/jobs',
     {
       schema: {
+        description: 'Get all scraping jobs',
         tags: ['scraping'],
-        summary: 'Get all scraping jobs',
-        description: 'Retrieve all scraping jobs, sorted by most recent first',
         response: {
           200: {
             type: 'object',
             properties: {
-              data: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'string' },
-                    url: { type: 'string' },
-                    source: { type: 'string' },
-                    status: { type: 'string', enum: ['pending', 'running', 'completed', 'failed'] },
-                    startedAt: { type: 'string' },
-                    completedAt: { type: 'string' },
-                    itemsFound: { type: 'integer' },
-                    itemsProcessed: { type: 'integer' },
-                    error: { type: 'string' },
-                  },
-                  required: ['id', 'url', 'source', 'status', 'startedAt', 'itemsFound', 'itemsProcessed'],
-                },
-              },
-              total: { type: 'integer' },
+              waiting: { type: 'number' },
+              active: { type: 'number' },
+              completed: { type: 'number' },
+              failed: { type: 'number' },
+              delayed: { type: 'number' },
             },
           },
         },
       },
     },
     async (request, reply) => {
-      const jobs = scrapingService.getAllJobs();
-      return {
-        data: jobs,
-        total: jobs.length,
-      };
-    }
-  );
-
-  // Get active scraping jobs
-  fastify.get(
-    '/scraping/jobs/active',
-    {
-      schema: {
-        tags: ['scraping'],
-        summary: 'Get active scraping jobs',
-        description: 'Retrieve all currently running or pending scraping jobs',
-        response: {
-          200: {
-            type: 'object',
-            properties: {
-              data: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'string' },
-                    url: { type: 'string' },
-                    source: { type: 'string' },
-                    status: { type: 'string', enum: ['pending', 'running'] },
-                    startedAt: { type: 'string' },
-                    itemsFound: { type: 'integer' },
-                    itemsProcessed: { type: 'integer' },
-                  },
-                  required: ['id', 'url', 'source', 'status', 'startedAt', 'itemsFound', 'itemsProcessed'],
-                },
-              },
-              total: { type: 'integer' },
-            },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      const activeJobs = scrapingService.getActiveJobs();
-      return {
-        data: activeJobs,
-        total: activeJobs.length,
-      };
-    }
-  );
-
-  // Cancel a scraping job
-  fastify.delete<{ Params: ScrapingJobParams }>(
-    '/scraping/jobs/:id',
-    {
-      schema: {
-        tags: ['scraping'],
-        summary: 'Cancel a scraping job',
-        description: 'Cancel a pending or running scraping job',
-        params: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', description: 'Scraping job ID' },
-          },
-          required: ['id'],
-        },
-        response: {
-          200: {
-            type: 'object',
-            properties: {
-              message: { type: 'string' },
-            },
-          },
-          404: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-              code: { type: 'string' },
-            },
-          },
-          400: {
-            type: 'object',
-            properties: {
-              error: { type: 'string' },
-              code: { type: 'string' },
-            },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      const params = ScrapingJobParamsSchema.parse(request.params);
-      const job = scrapingService.getJob(params.id);
-
-      if (!job) {
-        throw new NotFoundError('Scraping job');
-      }
-
-      const cancelled = scrapingService.cancelJob(params.id);
-      if (!cancelled) {
-        reply.status(400);
-        return {
-          error: 'Job cannot be cancelled - it may already be completed or failed',
-          code: 'CANNOT_CANCEL_JOB',
-        };
-      }
+      const waiting = await scrapingQueue.getWaiting();
+      const active = await scrapingQueue.getActive();
+      const completed = await scrapingQueue.getCompleted();
+      const failed = await scrapingQueue.getFailed();
+      const delayed = await scrapingQueue.getDelayed();
 
       return {
-        message: 'Scraping job cancelled successfully',
+        waiting: waiting.length,
+        active: active.length,
+        completed: completed.length,
+        failed: failed.length,
+        delayed: delayed.length,
       };
     }
   );
