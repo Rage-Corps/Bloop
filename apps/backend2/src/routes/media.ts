@@ -1,8 +1,7 @@
 import { FastifyInstance } from 'fastify'
-import { db } from '../db/connection'
-import { media, sources, categories } from '../db/schema'
-import { eq } from 'drizzle-orm'
-import { randomUUID } from 'crypto'
+import { MediaHelper } from '../helpers/mediaHelper'
+
+const mediaHelper = new MediaHelper()
 
 export default async function mediaRoutes(fastify: FastifyInstance) {
   fastify.get('/media', {
@@ -27,7 +26,7 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
       }
     }
   }, async (request, reply) => {
-    const allMedia = await db.select().from(media)
+    const allMedia = await mediaHelper.getAllMedia()
     return allMedia
   })
 
@@ -79,20 +78,13 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
   }, async (request, reply) => {
     const { id } = request.params as { id: string }
     
-    const mediaItem = await db.select().from(media).where(eq(media.id, id))
-    if (mediaItem.length === 0) {
+    const mediaItem = await mediaHelper.getMediaById(id)
+    if (!mediaItem) {
       reply.code(404)
       return { error: 'Media not found' }
     }
-
-    const mediaSources = await db.select().from(sources).where(eq(sources.mediaId, id))
-    const mediaCategories = await db.select().from(categories).where(eq(categories.mediaId, id))
     
-    return {
-      ...mediaItem[0],
-      sources: mediaSources,
-      categories: mediaCategories
-    }
+    return mediaItem
   })
 
   fastify.post('/media', {
@@ -138,7 +130,7 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
       }
     }
   }, async (request, reply) => {
-    const { name, description, thumbnailUrl, pageUrl, sources: reqSources = [], categories: reqCategories = [] } = request.body as {
+    const { name, description, thumbnailUrl, pageUrl, sources = [], categories = [] } = request.body as {
       name: string
       description: string
       thumbnailUrl: string
@@ -147,38 +139,163 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
       categories?: string[]
     }
     
-    const mediaId = randomUUID()
-    
-    const newMedia = await db.insert(media).values({
-      id: mediaId,
+    const newMedia = await mediaHelper.createMedia({
       name,
       description,
       thumbnailUrl,
-      pageUrl
-    }).returning()
+      pageUrl,
+      sources,
+      categories
+    })
+    
+    reply.code(201)
+    return newMedia
+  })
 
-    if (reqSources.length > 0) {
-      await db.insert(sources).values(
-        reqSources.map(source => ({
-          id: randomUUID(),
-          mediaId,
-          sourceName: source.sourceName,
-          url: source.url
-        }))
-      )
+  fastify.put('/media/:id', {
+    schema: {
+      description: 'Update a media item',
+      tags: ['media'],
+      params: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' }
+        }
+      },
+      body: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          description: { type: 'string' },
+          thumbnailUrl: { type: 'string' },
+          pageUrl: { type: 'string' }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            id: { type: 'string' },
+            name: { type: 'string' },
+            description: { type: 'string' },
+            thumbnailUrl: { type: 'string' },
+            pageUrl: { type: 'string' },
+            createdAt: { type: 'string' }
+          }
+        }
+      }
     }
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const updateData = request.body as {
+      name?: string
+      description?: string
+      thumbnailUrl?: string
+      pageUrl?: string
+    }
+    
+    const updatedMedia = await mediaHelper.updateMedia(id, updateData)
+    if (!updatedMedia) {
+      reply.code(404)
+      return { error: 'Media not found' }
+    }
+    
+    return updatedMedia
+  })
 
-    if (reqCategories.length > 0) {
-      await db.insert(categories).values(
-        reqCategories.map(category => ({
-          id: randomUUID(),
-          mediaId,
-          category
-        }))
-      )
+  fastify.delete('/media/:id', {
+    schema: {
+      description: 'Delete a media item',
+      tags: ['media'],
+      params: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            message: { type: 'string' }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    
+    const deleted = await mediaHelper.deleteMedia(id)
+    if (!deleted) {
+      reply.code(404)
+      return { error: 'Media not found' }
+    }
+    
+    return { message: 'Media deleted successfully' }
+  })
+
+  fastify.post('/media/:id/sources', {
+    schema: {
+      description: 'Add a source to a media item',
+      tags: ['media'],
+      params: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' }
+        }
+      },
+      body: {
+        type: 'object',
+        required: ['sourceName', 'url'],
+        properties: {
+          sourceName: { type: 'string' },
+          url: { type: 'string' }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const { sourceName, url } = request.body as { sourceName: string; url: string }
+    
+    const newSource = await mediaHelper.addSourceToMedia(id, sourceName, url)
+    if (!newSource) {
+      reply.code(404)
+      return { error: 'Media not found' }
     }
     
     reply.code(201)
-    return newMedia[0]
+    return newSource
+  })
+
+  fastify.post('/media/:id/categories', {
+    schema: {
+      description: 'Add a category to a media item',
+      tags: ['media'],
+      params: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' }
+        }
+      },
+      body: {
+        type: 'object',
+        required: ['category'],
+        properties: {
+          category: { type: 'string' }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string }
+    const { category } = request.body as { category: string }
+    
+    const newCategory = await mediaHelper.addCategoryToMedia(id, category)
+    if (!newCategory) {
+      reply.code(404)
+      return { error: 'Media not found' }
+    }
+    
+    reply.code(201)
+    return newCategory
   })
 }

@@ -2,7 +2,6 @@ import { FastifyInstance } from 'fastify';
 import { scrapingQueue } from '../jobs/queue';
 import { randomUUID } from 'crypto';
 import { ScrapingUtils } from '../utils/ScrapingUtils';
-import { ScrapingJobData } from '../types/queue';
 
 export default async function scrapingRoutes(fastify: FastifyInstance) {
   fastify.post(
