@@ -1,6 +1,7 @@
-import { Queue, Worker } from 'bullmq';
+import { Queue, Worker, Job } from 'bullmq';
 import IORedis from 'ioredis';
 import { ScrapingUtils } from '../utils/ScrapingUtils';
+import { ScrapingJobData, JobResult } from '../types/queue';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -23,7 +24,7 @@ connection.on('error', (err) => {
   console.error('❌ Redis connection error:', err.message);
 });
 
-export const scrapingQueue = new Queue('scraping', {
+export const scrapingQueue = new Queue<ScrapingJobData>('scraping', {
   connection: connection.duplicate(),
   defaultJobOptions: {
     removeOnComplete: 100,
@@ -42,9 +43,9 @@ export const initializeWorker = async () => {
   try {
     await connection.connect();
 
-    scrapingWorker = new Worker(
+    scrapingWorker = new Worker<ScrapingJobData, JobResult>(
       'scraping',
-      async (job) => {
+      async (job: Job<ScrapingJobData>): Promise<JobResult> => {
         console.log(`Processing scraping job ${job.id}:`, job.data);
 
         const { pageLinks, baseUrl } = job.data;
@@ -56,7 +57,10 @@ export const initializeWorker = async () => {
         }
 
         console.log(`Completed scraping job ${job.id}`);
-        return { message: 'Scraping completed successfully', jobId: job.id };
+        return { 
+          message: 'Scraping completed successfully', 
+          jobId: job.id || 'unknown' 
+        };
       },
       {
         connection: connection.duplicate(),
