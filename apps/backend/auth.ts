@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "./src/db/connection";
 
-export const auth = betterAuth({
+const authConfig = {
   database: drizzleAdapter(db, {
     provider: "pg",
   }),
@@ -16,7 +16,9 @@ export const auth = betterAuth({
   advanced: {
     generateId: () => crypto.randomUUID(),
   },
-});
+} as const;
+
+export const auth = betterAuth(authConfig) as any;
 
 export type Session = typeof auth.$Infer.Session;
-export type User = typeof auth.$Infer.User;
+export type User = typeof auth.$Infer.Session.user;
