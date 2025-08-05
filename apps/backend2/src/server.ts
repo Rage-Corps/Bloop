@@ -1,7 +1,6 @@
 import Fastify from 'fastify'
 import healthRoutes from './routes/health'
-import userRoutes from './routes/users'
-import { db } from './db/connection'
+import mediaRoutes from './routes/media'
 
 const start = async () => {
   const fastify = Fastify({
@@ -43,7 +42,7 @@ const start = async () => {
   })
 
   await fastify.register(healthRoutes)
-  await fastify.register(userRoutes)
+  await fastify.register(mediaRoutes)
 
   try {
     await fastify.listen({ port: 3001, host: '0.0.0.0' })
