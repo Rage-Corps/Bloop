@@ -1,7 +1,7 @@
 FROM node:20-alpine
 
-# Install pnpm
-RUN corepack enable pnpm
+# Install pnpm and wget for health checks
+RUN corepack enable pnpm && apk add --no-cache wget
 
 # Set working directory
 WORKDIR /app
@@ -29,5 +29,5 @@ EXPOSE 3001
 # Set working directory to backend for running the app
 WORKDIR /app/apps/backend
 
-# Run development server
-CMD ["pnpm", "dev"]
+# Run development server with database initialization
+CMD ["pnpm", "dev:with-init"]
