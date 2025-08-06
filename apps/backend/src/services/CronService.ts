@@ -1,5 +1,7 @@
 import * as cron from 'node-cron';
 import { SettingsDao } from '../dao/settingsDao';
+import { ScrapingUtils } from '../utils/ScrapingUtils';
+import { scrapingQueue } from '../jobs/queue';
 
 export class CronService {
   private settingsDao: SettingsDao;
@@ -26,14 +28,37 @@ export class CronService {
 
     const frequencySetting =
       await this.settingsDao.getSetting('cron.frequency');
-    const frequency = frequencySetting?.value || '*/1 * * * *';
+    const frequency = frequencySetting?.value || '* */6 * * *';
 
     if (this.currentTask) {
       this.currentTask.stop();
     }
 
-    this.currentTask = cron.schedule(frequency, () => {
-      console.log(new Date(), 'Hello World - Cron job running');
+    this.currentTask = cron.schedule(frequency, async () => {
+      const baseUrl = process.env.BASE_SCRAPE_URL;
+
+      if (!baseUrl) {
+        return { error: 'BASE_SCRAPE_URL not configured on Schedule' };
+      }
+
+      const waitingJobs = await scrapingQueue.getWaiting();
+
+      if (waitingJobs.length) {
+        console.log(`🕒 Things are still waiting did not do cron`);
+        return;
+      }
+
+      const scrapeUtil = new ScrapingUtils(baseUrl);
+
+      const jobIds = await scrapeUtil.startScrape(
+        {
+          forceMode: false,
+          waitTime: 1000,
+        },
+        scrapingQueue
+      );
+
+      return jobIds;
     });
 
     console.log(`🕒 Cron job scheduled with frequency: ${frequency}`);

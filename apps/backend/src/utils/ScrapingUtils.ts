@@ -1,4 +1,7 @@
+import { Queue } from 'bullmq';
 import * as cheerio from 'cheerio';
+import { randomUUID } from 'crypto';
+import { ScrapingJobData } from '../types/queue';
 
 const DEFAULT_HEADERS = {
   'User-Agent':
@@ -160,6 +163,79 @@ export class ScrapingUtils {
     } catch (error) {
       console.error(`Error processing link ${link}:`, error);
     }
+  }
+
+  async startScrape(
+    {
+      forceMode,
+      waitTime,
+      maxPages,
+    }: { forceMode: boolean; waitTime: number; maxPages?: number | undefined },
+    scrapingQueue: Queue<
+      ScrapingJobData,
+      any,
+      string,
+      ScrapingJobData,
+      any,
+      string
+    >
+  ) {
+    const jobId = randomUUID();
+    const { firstPageLinks, maxPageIndex } = await this.getScrapingInfo();
+
+    // Create first job
+    const job = await scrapingQueue.add(
+      'scrape-page-1',
+      {
+        id: jobId,
+        baseUrl: this.baseUrl,
+        pageLinks: firstPageLinks,
+        forceMode,
+        waitTime,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      },
+      {
+        jobId,
+      }
+    );
+
+    const jobIds = [job.id];
+    const totalPages = maxPages ?? maxPageIndex;
+
+    // Parallelize the creation of remaining jobs
+    const pagePromises = [];
+    for (let index = 2; index <= totalPages; index++) {
+      const pageJobId = randomUUID();
+      const pageUrl = `${this.baseUrl}page/${index}`;
+
+      pagePromises.push(
+        this.fetchAndExtractLinks(pageUrl).then(async (pageLinks) => {
+          const pageJob = await scrapingQueue.add(
+            `scrape-page-${index}`,
+            {
+              id: pageJobId,
+              baseUrl: this.baseUrl,
+              pageLinks,
+              forceMode,
+              waitTime,
+              status: 'pending',
+              createdAt: new Date().toISOString(),
+            },
+            {
+              jobId: pageJobId,
+            }
+          );
+          return pageJob.id;
+        })
+      );
+    }
+
+    // Wait for all jobs to be created and collect their IDs
+    const additionalJobIds = await Promise.all(pagePromises);
+    jobIds.push(...additionalJobIds);
+
+    return jobIds;
   }
 
   private getMediaLinkThumbnailAndName(

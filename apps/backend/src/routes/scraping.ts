@@ -53,7 +53,6 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
         waitTime?: number;
       };
 
-      const jobId = randomUUID();
       const baseUrl = process.env.BASE_SCRAPE_URL;
 
       if (!baseUrl) {
@@ -63,51 +62,22 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
 
       const scrapeUtil = new ScrapingUtils(baseUrl);
 
-      const { firstPageLinks, maxPageIndex } =
-        await scrapeUtil.getScrapingInfo();
-
-      const job = await scrapingQueue.add(
-        'scrape-page-1',
+      const jobIds = await scrapeUtil.startScrape(
         {
-          id: jobId,
-          baseUrl,
-          pageLinks: firstPageLinks,
+          maxPages,
           forceMode,
           waitTime,
-          status: 'pending',
-          createdAt: new Date().toISOString(),
         },
-        {
-          jobId,
-        }
+        scrapingQueue
       );
 
-      for (let index = 2; index <= (maxPages ?? maxPageIndex); index++) {
-        const jobId = randomUUID();
-        const pageUrl = `${baseUrl}page/${index}`;
-        const pageLinks = await scrapeUtil.fetchAndExtractLinks(pageUrl);
-        await scrapingQueue.add(
-          `scrape-page-${index}`,
-          {
-            id: jobId,
-            baseUrl,
-            pageLinks,
-            forceMode,
-            waitTime,
-            status: 'pending',
-            createdAt: new Date().toISOString(),
-          },
-          {
-            jobId,
-          }
-        );
-      }
-
-      fastify.log.info(`🚀 Started scraping job ${job.id} for ${baseUrl}`);
+      fastify.log.info(
+        `🚀 Started scraping jobs ${jobIds.join(',')} for ${baseUrl}`
+      );
 
       reply.code(201);
       return {
-        jobId: job.id,
+        jobIds,
         message: 'Scraping job started successfully',
         data: {
           maxPages,
@@ -176,15 +146,17 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
       try {
         // Get all waiting jobs
         const waitingJobs = await scrapingQueue.getWaiting();
-        
+
         // Cancel each waiting job
-        const cancelPromises = waitingJobs.map(job => job.remove());
+        const cancelPromises = waitingJobs.map((job) => job.remove());
         await Promise.all(cancelPromises);
-        
+
         const cancelledCount = waitingJobs.length;
-        
-        fastify.log.info(`🛑 Cancelled ${cancelledCount} waiting scraping jobs`);
-        
+
+        fastify.log.info(
+          `🛑 Cancelled ${cancelledCount} waiting scraping jobs`
+        );
+
         return {
           message: `Successfully cancelled ${cancelledCount} waiting jobs`,
           cancelledJobs: cancelledCount,
