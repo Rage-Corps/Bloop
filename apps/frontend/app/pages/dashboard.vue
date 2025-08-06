@@ -13,7 +13,7 @@
         </div>
 
         <!-- Search and Filters -->
-        <div class="flex space-x-3">
+        <div class="flex space-x-3 items-center">
           <UInput
             v-model="searchQuery"
             placeholder="Search media..."
@@ -21,6 +21,39 @@
             size="md"
             @input="debouncedSearch"
           />
+
+          <ClientOnly>
+            <USelect
+              v-model="selectedCategories"
+              :items="availableCategories"
+              placeholder="Categories"
+              multiple
+              searchable
+              size="md"
+              class="min-w-[200px]"
+              @change="filterMedia"
+            />
+            <template #fallback>
+              <div class="min-w-[200px] h-10 bg-gray-800 rounded-md animate-pulse"></div>
+            </template>
+          </ClientOnly>
+
+          <ClientOnly>
+            <USelect
+              v-model="selectedSources"
+              :items="availableSources"
+              placeholder="Sources"
+              multiple
+              searchable
+              size="md"
+              class="min-w-[200px]"
+              @change="filterMedia"
+            />
+            <template #fallback>
+              <div class="min-w-[200px] h-10 bg-gray-800 rounded-md animate-pulse"></div>
+            </template>
+          </ClientOnly>
+
           <UButton
             color="primary"
             variant="soft"
@@ -114,6 +147,8 @@ definePageMeta({
 const router = useRouter();
 const route = useRoute();
 const { fetchMedia, loading, error } = useMedia();
+const { fetchCategories } = useCategories();
+const { fetchSources } = useSources();
 
 // Get current page from query parameters, default to 1
 const currentPage = computed(() => parseInt(route.query.page as string) || 1);
@@ -125,8 +160,39 @@ const searchQuery = ref('');
 const showMediaDetail = ref(false);
 const selectedMedia = ref<MediaWithMetadata | null>(null);
 
+// Filter data
+const selectedCategories = ref<string[]>([]);
+const selectedSources = ref<string[]>([]);
+const availableCategories = ref<{ label: string; value: string }[]>([]);
+const availableSources = ref<{ label: string; value: string }[]>([]);
+
 // Computed
 const offset = computed(() => (currentPage.value - 1) * itemsPerPage);
+
+// Load filter options
+const loadCategories = async () => {
+  try {
+    const data = await fetchCategories();
+    availableCategories.value = data.map((category) => ({
+      label: category,
+      value: category,
+    }));
+  } catch (err) {
+    console.error('Failed to load categories:', err);
+  }
+};
+
+const loadSources = async () => {
+  try {
+    const data = await fetchSources();
+    availableSources.value = data.map((source) => ({
+      label: source,
+      value: source,
+    }));
+  } catch (err) {
+    console.error('Failed to load sources:', err);
+  }
+};
 
 // Methods
 const loadMedia = async () => {
@@ -142,7 +208,15 @@ const loadMedia = async () => {
   }
 };
 
+const filterMedia = () => {
+  router.push({ query: { page: 1 } });
+  loadMedia();
+};
+
 const refreshMedia = () => {
+  selectedCategories.value = [];
+  selectedSources.value = [];
+  searchQuery.value = '';
   router.push({ query: { page: 1 } });
   loadMedia();
 };
@@ -173,6 +247,8 @@ const closeMediaDetail = () => {
 // Lifecycle
 onMounted(() => {
   loadMedia();
+  loadCategories();
+  loadSources();
 });
 
 watch(searchQuery, () => {
