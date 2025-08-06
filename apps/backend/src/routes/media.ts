@@ -18,7 +18,9 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
         properties: {
           limit: { type: 'number', default: 20 },
           offset: { type: 'number', default: 0 },
-          source: { type: 'string' }
+          source: { type: 'string' },
+          categories: { type: 'string' },
+          sources: { type: 'string' }
         }
       },
       response: {
@@ -62,7 +64,17 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
       }
     }
   }, async (request, reply) => {
-    const query = request.query as MediaQuery
+    const rawQuery = request.query as any
+    
+    // Parse comma-separated strings into arrays
+    const query: MediaQuery = {
+      limit: rawQuery.limit,
+      offset: rawQuery.offset,
+      source: rawQuery.source,
+      categories: rawQuery.categories ? rawQuery.categories.split(',').map((c: string) => c.trim()) : undefined,
+      sources: rawQuery.sources ? rawQuery.sources.split(',').map((s: string) => s.trim()) : undefined,
+    }
+    
     const result = await mediaHelper.getMediaWithPagination(query)
     return result
   })

@@ -44,6 +44,8 @@ export interface MediaQuery {
   limit?: number;
   offset?: number;
   source?: string;
+  categories?: string[];
+  sources?: string[];
 }
 
 // Create media input

@@ -49,47 +49,80 @@ export class MediaHelper {
   }
 
   async getMediaWithPagination(query: MediaQuery = {}): Promise<MediaListResponse> {
-    const { limit = 20, offset = 0, source } = query;
+    const { limit = 20, offset = 0, source, categories: filterCategories, sources: filterSources } = query;
     
-    // Build where conditions
-    let whereConditions;
+    // Build where conditions for media table
+    const whereConditions: any[] = [];
+    
     if (source) {
-      whereConditions = ilike(media.name, `%${source}%`);
+      whereConditions.push(ilike(media.name, `%${source}%`));
+    }
+
+    // Build media IDs subquery based on filters
+    let mediaIdsQuery = db.selectDistinct({ id: media.id }).from(media);
+
+    // Apply text search filter
+    if (whereConditions.length > 0) {
+      whereConditions.forEach(condition => {
+        mediaIdsQuery = mediaIdsQuery.where(condition);
+      });
+    }
+
+    // Apply category filter if provided
+    if (filterCategories && filterCategories.length > 0) {
+      mediaIdsQuery = mediaIdsQuery
+        .innerJoin(categories, eq(categories.mediaId, media.id))
+        .where(inArray(categories.category, filterCategories));
+    }
+
+    // Apply source filter if provided
+    if (filterSources && filterSources.length > 0) {
+      mediaIdsQuery = mediaIdsQuery
+        .innerJoin(sources, eq(sources.mediaId, media.id))
+        .where(inArray(sources.sourceName, filterSources));
+    }
+
+    // Get filtered media IDs
+    const filteredMediaIds = await mediaIdsQuery;
+    const mediaIds = filteredMediaIds.map(item => item.id);
+
+    if (mediaIds.length === 0) {
+      return {
+        data: [],
+        total: 0,
+        limit,
+        offset
+      };
     }
 
     // Get total count
-    const totalResult = await db
-      .select({ count: count() })
-      .from(media)
-      .where(whereConditions);
-    
-    const total = totalResult[0]?.count || 0;
+    const total = mediaIds.length;
 
-    // Get paginated data with sources and categories
+    // Get paginated media items using the filtered IDs
+    const paginatedIds = mediaIds.slice(offset, offset + limit);
+    
     const mediaItems = await db
       .select()
       .from(media)
-      .where(whereConditions)
-      .limit(limit)
-      .offset(offset)
+      .where(inArray(media.id, paginatedIds))
       .orderBy(media.createdAt);
 
-    // Get sources and categories for all media items
-    const mediaIds = mediaItems.map(item => item.id);
+    // Get sources and categories for the paginated media items
+    const paginatedMediaIds = mediaItems.map(item => item.id);
     
     let allSources: any[] = [];
     let allCategories: any[] = [];
     
-    if (mediaIds.length > 0) {
+    if (paginatedMediaIds.length > 0) {
       allSources = await db
         .select()
         .from(sources)
-        .where(inArray(sources.mediaId, mediaIds));
+        .where(inArray(sources.mediaId, paginatedMediaIds));
       
       allCategories = await db
         .select()
         .from(categories)
-        .where(inArray(categories.mediaId, mediaIds));
+        .where(inArray(categories.mediaId, paginatedMediaIds));
     }
 
     // Group sources and categories by mediaId

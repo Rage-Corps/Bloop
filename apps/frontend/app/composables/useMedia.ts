@@ -14,6 +14,15 @@ export const useMedia = () => {
       if (query.limit) params.append('limit', query.limit.toString());
       if (query.offset) params.append('offset', query.offset.toString());
       if (query.source) params.append('source', query.source);
+      
+      // Handle array parameters for categories and sources
+      if (query.categories && query.categories.length > 0) {
+        params.append('categories', query.categories.join(','));
+      }
+      
+      if (query.sources && query.sources.length > 0) {
+        params.append('sources', query.sources.join(','));
+      }
 
       const response = await $fetch<MediaListResponse>(
         `http://localhost:3001/api/media?${params.toString()}`

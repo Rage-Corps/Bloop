@@ -201,6 +201,8 @@ const loadMedia = async () => {
       limit: itemsPerPage,
       offset: offset.value,
       source: searchQuery.value || undefined,
+      categories: selectedCategories.value.length > 0 ? selectedCategories.value : undefined,
+      sources: selectedSources.value.length > 0 ? selectedSources.value : undefined,
     });
     mediaData.value = response;
   } catch (err) {
