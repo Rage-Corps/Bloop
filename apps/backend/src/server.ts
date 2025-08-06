@@ -2,6 +2,8 @@ import Fastify from 'fastify';
 import healthRoutes from './routes/health';
 import mediaRoutes from './routes/media';
 import scrapingRoutes from './routes/scraping';
+import categoryRoutes from './routes/category';
+import sourceRoutes from './routes/source';
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { FastifyAdapter } from '@bull-board/fastify';
@@ -112,6 +114,8 @@ const start = async () => {
   await fastify.register(healthRoutes, { prefix: '/api' });
   await fastify.register(mediaRoutes, { prefix: '/api' });
   await fastify.register(scrapingRoutes, { prefix: '/api' });
+  await fastify.register(categoryRoutes, { prefix: '/api' });
+  await fastify.register(sourceRoutes, { prefix: '/api' });
 
   await initializeWorker();
 

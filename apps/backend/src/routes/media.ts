@@ -1,8 +1,12 @@
 import { FastifyInstance } from 'fastify'
 import { MediaHelper } from '../helpers/mediaHelper'
+import { CategoryHelper } from '../helpers/categoryHelper'
+import { SourceHelper } from '../helpers/sourceHelper'
 import type { MediaQuery } from '@bloop/shared-types'
 
 const mediaHelper = new MediaHelper()
+const categoryHelper = new CategoryHelper()
+const sourceHelper = new SourceHelper()
 
 export default async function mediaRoutes(fastify: FastifyInstance) {
   fastify.get('/media', {
