@@ -1,6 +1,5 @@
 import { FastifyInstance } from 'fastify';
 import { scrapingQueue } from '../jobs/queue';
-import { randomUUID } from 'crypto';
 import { ScrapingUtils } from '../utils/ScrapingUtils';
 
 export default async function scrapingRoutes(fastify: FastifyInstance) {
@@ -108,7 +107,7 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    async (request, reply) => {
+    async (_request, _reply) => {
       const waiting = await scrapingQueue.getWaiting();
       const active = await scrapingQueue.getActive();
       const completed = await scrapingQueue.getCompleted();
@@ -142,7 +141,7 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    async (request, reply) => {
+    async (_request, reply) => {
       try {
         // Get all waiting jobs
         const waitingJobs = await scrapingQueue.getWaiting();

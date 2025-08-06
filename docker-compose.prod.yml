@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.prod.Dockerfile
+    ports:
+      - '80:3000'
+    environment:
+      - NODE_ENV=production
+    networks:
+      - prod-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.prod.Dockerfile
+    ports:
+      - '${PORT:-3001}:3001'
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://prod_user:${POSTGRES_PASSWORD}@postgres:5432/backend_prod
+      - REDIS_URL=${REDIS_URL}
+      - BASE_SCRAPE_URL=${BASE_SCRAPE_URL}
+      - HOST=0.0.0.0
+      - PORT=${PORT:-3001}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - CRON_SERVICE_ENABLED=${CRON_SERVICE_ENABLED:-true}
+      - CRON_SERVICE_FREQUENCY=${CRON_SERVICE_FREQUENCY}
+    networks:
+      - prod-network
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=backend_prod
+      - POSTGRES_USER=prod_user
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    networks:
+      - prod-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    networks:
+      - prod-network
+    restart: unless-stopped
+
+volumes:
+  postgres_prod_data:
+
+networks:
+  prod-network:
+    driver: bridge

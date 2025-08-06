@@ -14,7 +14,7 @@ export default async function healthRoutes(fastify: FastifyInstance) {
         }
       }
     }
-  }, async (request, reply) => {
+  }, async (_request, _reply) => {
     return { hello: 'world' }
   })
 }

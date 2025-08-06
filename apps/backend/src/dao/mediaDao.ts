@@ -1,6 +1,6 @@
 import { db } from '../db/connection';
 import { media, sources, categories } from '../db/schema';
-import { eq, and, inArray, count, ilike } from 'drizzle-orm';
+import { eq, and, inArray, ilike } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import type { MediaListResponse, MediaQuery } from '@bloop/shared-types';
 
@@ -48,12 +48,20 @@ export class MediaDao {
     return await db.select().from(media);
   }
 
-  async getMediaWithPagination(query: MediaQuery = {}): Promise<MediaListResponse> {
-    const { limit = 20, offset = 0, source, categories: filterCategories, sources: filterSources } = query;
-    
+  async getMediaWithPagination(
+    query: MediaQuery = {}
+  ): Promise<MediaListResponse> {
+    const {
+      limit = 20,
+      offset = 0,
+      source,
+      categories: filterCategories,
+      sources: filterSources,
+    } = query;
+
     // Build where conditions for media table
     const whereConditions: any[] = [];
-    
+
     if (source) {
       whereConditions.push(ilike(media.name, `%${source}%`));
     }
@@ -61,37 +69,37 @@ export class MediaDao {
     // Build media IDs subquery based on filters
     let mediaIdsQuery = db.selectDistinct({ id: media.id }).from(media);
 
-    // Apply text search filter
-    if (whereConditions.length > 0) {
-      whereConditions.forEach(condition => {
-        mediaIdsQuery = mediaIdsQuery.where(condition);
-      });
-    }
-
     // Apply category filter if provided
     if (filterCategories && filterCategories.length > 0) {
-      mediaIdsQuery = mediaIdsQuery
+      mediaIdsQuery = db.selectDistinct({ id: media.id })
+        .from(media)
         .innerJoin(categories, eq(categories.mediaId, media.id))
-        .where(inArray(categories.category, filterCategories));
+        .where(inArray(categories.category, filterCategories)) as any;
     }
 
     // Apply source filter if provided
     if (filterSources && filterSources.length > 0) {
-      mediaIdsQuery = mediaIdsQuery
+      mediaIdsQuery = db.selectDistinct({ id: media.id })
+        .from(media)
         .innerJoin(sources, eq(sources.mediaId, media.id))
-        .where(inArray(sources.sourceName, filterSources));
+        .where(inArray(sources.sourceName, filterSources)) as any;
+    }
+
+    // Apply text search filter
+    if (whereConditions.length > 0) {
+      mediaIdsQuery = (mediaIdsQuery as any).where(and(...whereConditions));
     }
 
     // Get filtered media IDs
     const filteredMediaIds = await mediaIdsQuery;
-    const mediaIds = filteredMediaIds.map(item => item.id);
+    const mediaIds = filteredMediaIds.map((item) => item.id);
 
     if (mediaIds.length === 0) {
       return {
         data: [],
         total: 0,
         limit,
-        offset
+        offset,
       };
     }
 
@@ -100,7 +108,7 @@ export class MediaDao {
 
     // Get paginated media items using the filtered IDs
     const paginatedIds = mediaIds.slice(offset, offset + limit);
-    
+
     const mediaItems = await db
       .select()
       .from(media)
@@ -108,17 +116,17 @@ export class MediaDao {
       .orderBy(media.createdAt);
 
     // Get sources and categories for the paginated media items
-    const paginatedMediaIds = mediaItems.map(item => item.id);
-    
+    const paginatedMediaIds = mediaItems.map((item) => item.id);
+
     let allSources: any[] = [];
     let allCategories: any[] = [];
-    
+
     if (paginatedMediaIds.length > 0) {
       allSources = await db
         .select()
         .from(sources)
         .where(inArray(sources.mediaId, paginatedMediaIds));
-      
+
       allCategories = await db
         .select()
         .from(categories)
@@ -126,31 +134,38 @@ export class MediaDao {
     }
 
     // Group sources and categories by mediaId
-    const sourcesByMediaId = allSources.reduce((acc, source) => {
-      if (!acc[source.mediaId]) acc[source.mediaId] = [];
-      acc[source.mediaId].push(source);
-      return acc;
-    }, {} as Record<string, any[]>);
+    const sourcesByMediaId = allSources.reduce(
+      (acc, source) => {
+        if (!acc[source.mediaId]) acc[source.mediaId] = [];
+        acc[source.mediaId].push(source);
+        return acc;
+      },
+      {} as Record<string, any[]>
+    );
 
-    const categoriesByMediaId = allCategories.reduce((acc, category) => {
-      if (!acc[category.mediaId]) acc[category.mediaId] = [];
-      acc[category.mediaId].push(category.category);
-      return acc;
-    }, {} as Record<string, string[]>);
+    const categoriesByMediaId = allCategories.reduce(
+      (acc, category) => {
+        if (!acc[category.mediaId]) acc[category.mediaId] = [];
+        acc[category.mediaId].push(category.category);
+        return acc;
+      },
+      {} as Record<string, string[]>
+    );
 
-    // Combine data
-    const data = mediaItems.map(item => ({
+    // Combine data with proper date formatting
+    const data = mediaItems.map((item) => ({
       ...item,
+      createdAt: item.createdAt?.toISOString() || null,
       sources: sourcesByMediaId[item.id] || [],
-      categories: categoriesByMediaId[item.id] || []
+      categories: categoriesByMediaId[item.id] || [],
     }));
 
     return {
       data,
       total: Number(total),
       limit,
-      offset
-    };
+      offset,
+    } as MediaListResponse;
   }
 
   async getMediaById(id: string): Promise<MediaWithDetails | null> {
@@ -348,7 +363,7 @@ export class MediaDao {
       return {
         existingCount: 0,
         newLinks: [],
-        existingLinks: []
+        existingLinks: [],
       };
     }
 
@@ -358,13 +373,13 @@ export class MediaDao {
       .from(media)
       .where(inArray(media.pageUrl, pageLinks));
 
-    const existingLinks = existingMedia.map(item => item.pageUrl);
-    const newLinks = pageLinks.filter(link => !existingLinks.includes(link));
+    const existingLinks = existingMedia.map((item) => item.pageUrl);
+    const newLinks = pageLinks.filter((link) => !existingLinks.includes(link));
 
     return {
       existingCount: existingLinks.length,
       newLinks,
-      existingLinks
+      existingLinks,
     };
   }
 
@@ -378,7 +393,7 @@ export class MediaDao {
     if (existingMedia.length > 0) {
       // Update existing media
       const mediaId = existingMedia[0].id;
-      
+
       // Update media record
       const updatedMedia = await db
         .update(media)
@@ -386,7 +401,7 @@ export class MediaDao {
           name: input.name,
           description: input.description,
           thumbnailUrl: input.thumbnailUrl,
-          pageUrl: input.pageUrl
+          pageUrl: input.pageUrl,
         })
         .where(eq(media.id, mediaId))
         .returning();

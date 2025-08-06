@@ -18,7 +18,7 @@ export default async function sourceRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    async (request, reply) => {
+    async (_request, _reply) => {
       const sources = await sourceDao.getUniqueSources();
       return sources;
     }

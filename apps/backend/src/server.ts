@@ -96,7 +96,7 @@ const start = async () => {
 
         // Forward response to client
         reply.status(response.status);
-        response.headers.forEach((value, key) => reply.header(key, value));
+        response.headers.forEach((value: string, key: string) => reply.header(key, value));
         reply.send(response.body ? await response.text() : null);
       } catch (error) {
         fastify.log.error('Authentication Error:', error);

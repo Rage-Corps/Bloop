@@ -41,7 +41,7 @@ let scrapingWorker: Worker | null = null;
 // Helper functions for media validation and processing
 function validateMediaObject(
   media: any,
-  link: string
+  _link: string
 ): { isValid: boolean; missingFields: string[] } {
   const missingFields: string[] = [];
 

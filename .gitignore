@@ -13,3 +13,5 @@ dist/
 **/dist/
 apps/*/dist/
 packages/*/dist/
+
+.env

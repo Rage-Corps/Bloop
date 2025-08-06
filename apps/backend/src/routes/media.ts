@@ -1,12 +1,8 @@
 import { FastifyInstance } from 'fastify';
 import { MediaDao } from '../dao/mediaDao';
-import { CategoryDao } from '../dao/categoryDao';
-import { SourceDao } from '../dao/sourceDao';
 import type { MediaQuery } from '@bloop/shared-types';
 
 const mediaDao = new MediaDao();
-const categoryDao = new CategoryDao();
-const sourceDao = new SourceDao();
 
 export default async function mediaRoutes(fastify: FastifyInstance) {
   fastify.get(
@@ -66,7 +62,7 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    async (request, reply) => {
+    async (request, _reply) => {
       const rawQuery = request.query as any;
 
       // Parse comma-separated strings into arrays

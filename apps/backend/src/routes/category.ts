@@ -18,7 +18,7 @@ export default async function categoryRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    async (request, reply) => {
+    async (_request, _reply) => {
       const categories = await categoryDao.getUniqueCategories();
       return categories;
     }

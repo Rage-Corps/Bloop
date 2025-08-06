@@ -162,6 +162,7 @@ export class ScrapingUtils {
       return media;
     } catch (error) {
       console.error(`Error processing link ${link}:`, error);
+      return null;
     }
   }
 
@@ -274,7 +275,7 @@ export class ScrapingUtils {
     const linkTabs = $('#link-tabs');
     const sources: { source: string; url: string }[] = [];
 
-    linkTabs.find('li a').each((index, element) => {
+    linkTabs.find('li a').each((_index, element) => {
       const source = $(element).text().trim();
       const url = $(element).attr('href');
 
@@ -289,7 +290,7 @@ export class ScrapingUtils {
   private getMediaLinkCategories($: cheerio.CheerioAPI): string[] {
     const categories: string[] = [];
 
-    $('a[rel="category"]').each((index, element) => {
+    $('a[rel="category"]').each((_index, element) => {
       const categoryText = $(element).text().trim();
       if (categoryText) {
         categories.push(categoryText);

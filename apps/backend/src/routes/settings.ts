@@ -26,7 +26,7 @@ export default async function settingsRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    async (request, reply) => {
+    async (_request, _reply) => {
       const config = await fastify.cronService.getConfiguration();
       return config;
     }

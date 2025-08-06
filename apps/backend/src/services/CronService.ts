@@ -45,7 +45,7 @@ export class CronService {
 
       if (waitingJobs.length) {
         console.log(`🕒 Things are still waiting did not do cron`);
-        return;
+        return { message: 'Jobs still in queue, skipping cron execution' };
       }
 
       const scrapeUtil = new ScrapingUtils(baseUrl);
