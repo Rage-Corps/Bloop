@@ -2,7 +2,7 @@ import { db } from '../db/connection';
 import { sources } from '../db/schema';
 import { sql } from 'drizzle-orm';
 
-export class SourceHelper {
+export class SourceDao {
   async getUniqueSources(): Promise<string[]> {
     const result = await db
       .selectDistinct({ sourceName: sources.sourceName })

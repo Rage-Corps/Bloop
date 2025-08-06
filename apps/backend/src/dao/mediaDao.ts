@@ -43,7 +43,7 @@ export interface MediaWithDetails {
   }>;
 }
 
-export class MediaHelper {
+export class MediaDao {
   async getAllMedia(): Promise<any[]> {
     return await db.select().from(media);
   }

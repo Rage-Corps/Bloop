@@ -4,11 +4,13 @@ import mediaRoutes from './routes/media';
 import scrapingRoutes from './routes/scraping';
 import categoryRoutes from './routes/category';
 import sourceRoutes from './routes/source';
+import settingsRoutes from './routes/settings';
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { FastifyAdapter } from '@bull-board/fastify';
 import { scrapingQueue, initializeWorker } from './jobs/queue';
 import { auth } from './auth';
+import { CronService } from './services/CronService';
 
 const start = async () => {
   const fastify = Fastify({
@@ -75,11 +77,18 @@ const start = async () => {
           method: request.method,
           headers,
         };
-        
-        if (request.method !== 'GET' && request.method !== 'HEAD' && request.body) {
-          requestInit.body = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
+
+        if (
+          request.method !== 'GET' &&
+          request.method !== 'HEAD' &&
+          request.body
+        ) {
+          requestInit.body =
+            typeof request.body === 'string'
+              ? request.body
+              : JSON.stringify(request.body);
         }
-        
+
         const req = new Request(url.toString(), requestInit);
 
         // Process authentication request
@@ -116,8 +125,16 @@ const start = async () => {
   await fastify.register(scrapingRoutes, { prefix: '/api' });
   await fastify.register(categoryRoutes, { prefix: '/api' });
   await fastify.register(sourceRoutes, { prefix: '/api' });
+  await fastify.register(settingsRoutes, { prefix: '/api' });
 
   await initializeWorker();
+
+  const cronService = new CronService();
+  await cronService.initialize();
+  await cronService.start();
+
+  // Make cronService available globally for other modules
+  fastify.decorate('cronService', cronService);
 
   try {
     await fastify.listen({ port: 3001, host: '0.0.0.0' });

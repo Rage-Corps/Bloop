@@ -2,7 +2,7 @@ import { Queue, Worker, Job } from 'bullmq';
 import IORedis from 'ioredis';
 import { ScrapingUtils } from '../utils/ScrapingUtils';
 import { ScrapingJobData, JobResult } from '../types/queue';
-import { MediaHelper } from '../helpers/mediaHelper';
+import { MediaDao } from '../dao/mediaDao';
 
 const connectionConfig = {
   host: 'redis',
@@ -39,26 +39,36 @@ export const scrapingQueue = new Queue<ScrapingJobData>('scraping', {
 let scrapingWorker: Worker | null = null;
 
 // Helper functions for media validation and processing
-function validateMediaObject(media: any, link: string): { isValid: boolean; missingFields: string[] } {
+function validateMediaObject(
+  media: any,
+  link: string
+): { isValid: boolean; missingFields: string[] } {
   const missingFields: string[] = [];
 
   if (!media.name || media.name.trim() === '') missingFields.push('name');
-  if (!media.description || media.description.trim() === '') missingFields.push('description');
-  if (!media.thumbnailUrl || media.thumbnailUrl.trim() === '') missingFields.push('thumbnailUrl');
+  if (!media.description || media.description.trim() === '')
+    missingFields.push('description');
+  if (!media.thumbnailUrl || media.thumbnailUrl.trim() === '')
+    missingFields.push('thumbnailUrl');
 
   return {
     isValid: missingFields.length === 0,
-    missingFields
+    missingFields,
   };
 }
 
-function processMediaSources(sources: any[], mediaName: string): Array<{ sourceName: string; url: string }> {
+function processMediaSources(
+  sources: any[],
+  mediaName: string
+): Array<{ sourceName: string; url: string }> {
   if (!Array.isArray(sources)) return [];
 
   return sources
     .filter((source) => {
       if (!source.source || !source.url) {
-        console.warn(`⚠️ Invalid source for ${mediaName} - missing source or url`);
+        console.warn(
+          `⚠️ Invalid source for ${mediaName} - missing source or url`
+        );
         return false;
       }
       return true;
@@ -69,7 +79,10 @@ function processMediaSources(sources: any[], mediaName: string): Array<{ sourceN
     }));
 }
 
-function processMediaCategories(categories: any[], mediaName: string): string[] {
+function processMediaCategories(
+  categories: any[],
+  mediaName: string
+): string[] {
   if (!Array.isArray(categories)) return [];
 
   return categories.filter((category) => {
@@ -84,11 +97,11 @@ function processMediaCategories(categories: any[], mediaName: string): string[] 
 async function processAndSaveMedia(
   media: any,
   link: string,
-  mediaHelper: MediaHelper
+  mediaDao: MediaDao
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const validation = validateMediaObject(media, link);
-    
+
     if (!validation.isValid) {
       const errorMsg = `Missing required fields: ${validation.missingFields.join(', ')}`;
       console.error(`❌ Invalid media object for ${link} - ${errorMsg}`);
@@ -96,10 +109,13 @@ async function processAndSaveMedia(
     }
 
     const validSources = processMediaSources(media.sources, media.name);
-    const validCategories = processMediaCategories(media.categories, media.name);
+    const validCategories = processMediaCategories(
+      media.categories,
+      media.name
+    );
 
     // Upsert media to database (create or update based on pageUrl)
-    const savedMedia = await mediaHelper.upsertMedia({
+    const savedMedia = await mediaDao.upsertMedia({
       name: media.name!.trim(),
       description: media.description!.trim(),
       thumbnailUrl: media.thumbnailUrl!.trim(),
@@ -110,7 +126,6 @@ async function processAndSaveMedia(
 
     console.log(`💾 Upserted media: ${savedMedia.name} (ID: ${savedMedia.id})`);
     return { success: true };
-
   } catch (dbError) {
     const errorMsg = `Database error - ${dbError instanceof Error ? dbError.message : 'Unknown database error'}`;
     console.error(`❌ Database error saving media for ${link}:`, dbError);
@@ -121,7 +136,7 @@ async function processAndSaveMedia(
 async function processScrapingLinks(
   linksToProcess: string[],
   scrapeUtil: ScrapingUtils,
-  mediaHelper: MediaHelper
+  mediaDao: MediaDao
 ): Promise<{ processedCount: number; savedCount: number; errors: string[] }> {
   let processedCount = 0;
   let savedCount = 0;
@@ -133,7 +148,7 @@ async function processScrapingLinks(
       const media = await scrapeUtil.processLink(link);
 
       if (media) {
-        const result = await processAndSaveMedia(media, link, mediaHelper);
+        const result = await processAndSaveMedia(media, link, mediaDao);
         if (result.success) {
           savedCount++;
         } else {
@@ -146,7 +161,9 @@ async function processScrapingLinks(
       processedCount++;
     } catch (error) {
       console.error(`❌ Error processing link ${link}:`, error);
-      errors.push(`${link}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      errors.push(
+        `${link}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -164,11 +181,11 @@ export const initializeWorker = async () => {
 
         const { pageLinks, baseUrl, forceMode = false } = job.data;
         const scrapeUtil = new ScrapingUtils(baseUrl);
-        const mediaHelper = new MediaHelper();
+        const mediaDao = new MediaDao();
 
         // Check existing page links unless force mode is enabled
         const { existingCount, newLinks } =
-          await mediaHelper.checkExistingPageLinks(pageLinks);
+          await mediaDao.checkExistingPageLinks(pageLinks);
 
         console.log(
           `📊 Page links analysis - Total: ${pageLinks.length}, Existing: ${existingCount}, New: ${newLinks.length}`
@@ -212,11 +229,8 @@ export const initializeWorker = async () => {
         }
 
         // Process the links using extracted function
-        const { processedCount, savedCount, errors } = await processScrapingLinks(
-          linksToProcess,
-          scrapeUtil,
-          mediaHelper
-        );
+        const { processedCount, savedCount, errors } =
+          await processScrapingLinks(linksToProcess, scrapeUtil, mediaDao);
 
         console.log(
           `✅ Completed scraping job ${job.id} - processed ${processedCount} links, saved ${savedCount} media items`

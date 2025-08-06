@@ -84,3 +84,11 @@ export const verification = pgTable("verification", {
     () => new Date(),
   ),
 });
+
+export const settings = pgTable("settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
