@@ -53,7 +53,7 @@ const start = async () => {
 
   // Register CORS
   await fastify.register(require('@fastify/cors'), {
-    origin: ['http://localhost:3000'], // Your frontend URL
+    origin: ['http://localhost:3000', 'bloop.smet-server.ddns.net'], // Your frontend URL
     credentials: true,
   });
 
@@ -96,7 +96,9 @@ const start = async () => {
 
         // Forward response to client
         reply.status(response.status);
-        response.headers.forEach((value: string, key: string) => reply.header(key, value));
+        response.headers.forEach((value: string, key: string) =>
+          reply.header(key, value)
+        );
         reply.send(response.body ? await response.text() : null);
       } catch (error) {
         fastify.log.error('Authentication Error:', error);
