@@ -23,7 +23,7 @@ services:
       - '${BACKEND_PORT:-3001}:3001'
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-bloopdb}
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
       - REDIS_URL=${REDIS_URL}
       - BASE_SCRAPE_URL=${BASE_SCRAPE_URL}
       - HOST=0.0.0.0
@@ -43,8 +43,6 @@ services:
     ports:
       - '${POSTGRES_PORT:-5432}:5432'
     environment:
-      - POSTGRES_DB=${POSTGRES_DB:-bloopdb}
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data

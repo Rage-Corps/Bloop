@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:22-alpine
 
 # Install pnpm and wget for health checks
 RUN corepack enable pnpm && apk add --no-cache wget
