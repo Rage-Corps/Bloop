@@ -5,6 +5,7 @@ import type {
 } from '@bloop/shared-types';
 
 export const useMedia = () => {
+  const config = useRuntimeConfig();
   const loading = ref(false);
   const error = ref<string | null>(null);
 
@@ -31,7 +32,7 @@ export const useMedia = () => {
       }
 
       const response = await $fetch<MediaListResponse>(
-        `${process.env.NUXT_PUBLIC_BACKEND_URL}/api/media?${params.toString()}`
+        `${config.public.backendUrl}/api/media?${params.toString()}`
       );
 
       return response;
@@ -49,7 +50,7 @@ export const useMedia = () => {
 
     try {
       const response = await $fetch<MediaWithMetadata>(
-        `${process.env.NUXT_PUBLIC_BACKEND_URL}/api/media/${id}`
+        `${config.public.backendUrl}/api/media/${id}`
       );
       return response;
     } catch (err: any) {

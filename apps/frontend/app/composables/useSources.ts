@@ -1,4 +1,5 @@
 export const useSources = () => {
+  const config = useRuntimeConfig();
   const loading = ref(false);
   const error = ref<string | null>(null);
 
@@ -8,7 +9,7 @@ export const useSources = () => {
 
     try {
       const response = await $fetch<string[]>(
-        `${process.env.NUXT_PUBLIC_BACKEND_URL}/api/sources`
+        `${config.public.backendUrl}/api/sources`
       );
 
       return response;

@@ -1,4 +1,5 @@
 export const useCategories = () => {
+  const config = useRuntimeConfig();
   const loading = ref(false);
   const error = ref<string | null>(null);
 
@@ -8,7 +9,7 @@ export const useCategories = () => {
 
     try {
       const response = await $fetch<string[]>(
-        `${process.env.NUXT_PUBLIC_BACKEND_URL}/api/categories`
+        `${config.public.backendUrl}/api/categories`
       );
 
       return response;
