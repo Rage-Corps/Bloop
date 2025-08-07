@@ -46,7 +46,7 @@ services:
     environment:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
-      - bloop_db_data:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql/data
     networks:
       - bloop-network
     restart: unless-stopped
@@ -56,14 +56,14 @@ services:
     ports:
       - '${REDIS_PORT:-6379}:6379'
     volumes:
-      - bloop_redis_cache:/data
+      - redis_cache:/data
     networks:
       - bloop-network
     restart: unless-stopped
 
 volumes:
-  bloop_db_data:
-  bloop_redis_cache:
+  db_data:
+  redis_cache:
 
 networks:
   bloop-network:
