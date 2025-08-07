@@ -9,9 +9,13 @@ const authConfig = {
   emailAndPassword: {
     enabled: true,
   },
-  baseURL: `http://${process.env.HOST || 'localhost'}:${process.env.PORT || '3001'}`,
+  baseURL: `${process.env.AUTH_URL}`,
   secret: process.env.AUTH_SECRET || 'fallback-secret-key',
-  trustedOrigins: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  trustedOrigins: [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'https://bloop*.smet-server.ddns.net',
+  ],
 };
 
 export const auth = betterAuth(authConfig) as any;

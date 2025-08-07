@@ -9,7 +9,7 @@ services:
       - '${FRONTEND_PORT:-80}:3000'
     environment:
       - NODE_ENV=production
-      - NUXT_PUBLIC_BACKEND_URL=${NUXT_PUBLIC_BACKEND_URL}
+      - NUXT_PUBLIC_BACKEND_URL=${AUTH_URL}
     command: sh -c 'echo "NUXT_PUBLIC_BACKEND_URL=$$NUXT_PUBLIC_BACKEND_URL" && node server/index.mjs'
     networks:
       - bloop-network
@@ -31,6 +31,7 @@ services:
       - HOST=0.0.0.0
       - PORT=${PORT:-3001}
       - AUTH_SECRET=${AUTH_SECRET}
+      - AUTH_URL=${AUTH_URL}
       - CRON_SERVICE_ENABLED=${CRON_SERVICE_ENABLED:-true}
       - CRON_SERVICE_FREQUENCY=${CRON_SERVICE_FREQUENCY}
     networks:
