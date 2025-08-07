@@ -10,6 +10,7 @@ services:
     environment:
       - NODE_ENV=production
       - NUXT_PUBLIC_BACKEND_URL=${NUXT_PUBLIC_BACKEND_URL}
+    command: sh -c 'echo "NUXT_PUBLIC_BACKEND_URL=$$NUXT_PUBLIC_BACKEND_URL" && node server/index.mjs'
     networks:
       - bloop-network
     depends_on:

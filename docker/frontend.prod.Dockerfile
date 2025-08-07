@@ -36,6 +36,9 @@ COPY --from=builder /app/apps/frontend/.output ./apps/frontend/.output
 
 WORKDIR /app/apps/frontend/.output
 
+
+RUN echo "NUXT_PUBLIC_BACKEND_URL=${NUXT_PUBLIC_BACKEND_URL}"
+
 EXPOSE 3000
 
 # Keep container running so we can inspect it
