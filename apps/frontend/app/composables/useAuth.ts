@@ -1,7 +1,19 @@
-import { signIn, signUp, signOut, useSession } from '~/lib/auth-client';
 import { computed } from 'vue';
+import { createAuthClient } from 'better-auth/vue';
+
+let authClient: ReturnType<typeof createAuthClient> | null = null;
 
 export const useAuth = () => {
+  // Create client if it doesn't exist and we're on client side
+  if (!authClient) {
+    const config = useRuntimeConfig();
+    authClient = createAuthClient({
+      baseURL: config.public.backendUrl as string,
+    });
+  }
+
+  const { signIn, signUp, signOut, useSession } = authClient || {};
+
   const session = useSession();
 
   const login = async (
