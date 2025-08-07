@@ -10,7 +10,7 @@ services:
     environment:
       - NODE_ENV=production
     networks:
-      - prod-network
+      - bloop-network
     depends_on:
       - backend
     restart: unless-stopped
@@ -32,7 +32,7 @@ services:
       - CRON_SERVICE_ENABLED=${CRON_SERVICE_ENABLED:-true}
       - CRON_SERVICE_FREQUENCY=${CRON_SERVICE_FREQUENCY}
     networks:
-      - prod-network
+      - bloop-network
     depends_on:
       - postgres
       - redis
@@ -45,9 +45,9 @@ services:
     environment:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
-      - postgres_prod_data:/var/lib/postgresql/data
+      - bloop_db_data:/var/lib/postgresql/data
     networks:
-      - prod-network
+      - bloop-network
     restart: unless-stopped
 
   redis:
@@ -55,12 +55,12 @@ services:
     ports:
       - '${REDIS_PORT:-6379}:6379'
     networks:
-      - prod-network
+      - bloop-network
     restart: unless-stopped
 
 volumes:
-  postgres_prod_data:
+  bloop_db_data:
 
 networks:
-  prod-network:
+  bloop-network:
     driver: bridge
