@@ -53,7 +53,7 @@ const start = async () => {
 
   // Register CORS
   await fastify.register(require('@fastify/cors'), {
-    origin: ['http://localhost:3000', 'bloop.smet-server.ddns.net'], // Your frontend URL
+    origin: ['http://localhost:3000', 'https://bloop.smet-server.ddns.net'], // Your frontend URL
     credentials: true,
   });
 
