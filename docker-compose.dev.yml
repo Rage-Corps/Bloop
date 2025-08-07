@@ -13,6 +13,7 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=${NODE_ENV:-development}
+      - NUXT_PUBLIC_BACKEND_URL=${NUXT_PUBLIC_BACKEND_URL:-http://localhost:3001}
     networks:
       - dev-network
     depends_on:
