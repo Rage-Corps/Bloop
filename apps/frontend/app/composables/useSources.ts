@@ -8,7 +8,7 @@ export const useSources = () => {
 
     try {
       const response = await $fetch<string[]>(
-        'http://localhost:3001/api/sources'
+        `${process.env.NUXT_PUBLIC_BACKEND_URL}/api/sources`
       );
 
       return response;

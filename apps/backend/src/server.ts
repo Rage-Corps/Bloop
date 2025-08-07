@@ -36,7 +36,7 @@ const start = async () => {
       },
       servers: [
         {
-          url: 'http://localhost:3001',
+          url: process.env.AUTH_URL,
           description: 'Development server',
         },
       ],

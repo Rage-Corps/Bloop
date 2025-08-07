@@ -1,10 +1,16 @@
-import type { MediaWithMetadata, MediaListResponse, MediaQuery } from '@bloop/shared-types';
+import type {
+  MediaWithMetadata,
+  MediaListResponse,
+  MediaQuery,
+} from '@bloop/shared-types';
 
 export const useMedia = () => {
   const loading = ref(false);
   const error = ref<string | null>(null);
 
-  const fetchMedia = async (query: MediaQuery = {}): Promise<MediaListResponse> => {
+  const fetchMedia = async (
+    query: MediaQuery = {}
+  ): Promise<MediaListResponse> => {
     loading.value = true;
     error.value = null;
 
@@ -14,18 +20,18 @@ export const useMedia = () => {
       if (query.limit) params.append('limit', query.limit.toString());
       if (query.offset) params.append('offset', query.offset.toString());
       if (query.source) params.append('source', query.source);
-      
+
       // Handle array parameters for categories and sources
       if (query.categories && query.categories.length > 0) {
         params.append('categories', query.categories.join(','));
       }
-      
+
       if (query.sources && query.sources.length > 0) {
         params.append('sources', query.sources.join(','));
       }
 
       const response = await $fetch<MediaListResponse>(
-        `http://localhost:3001/api/media?${params.toString()}`
+        `${process.env.NUXT_PUBLIC_BACKEND_URL}/api/media?${params.toString()}`
       );
 
       return response;
@@ -43,7 +49,7 @@ export const useMedia = () => {
 
     try {
       const response = await $fetch<MediaWithMetadata>(
-        `http://localhost:3001/api/media/${id}`
+        `${process.env.NUXT_PUBLIC_BACKEND_URL}/api/media/${id}`
       );
       return response;
     } catch (err: any) {

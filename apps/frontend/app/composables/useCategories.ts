@@ -8,7 +8,7 @@ export const useCategories = () => {
 
     try {
       const response = await $fetch<string[]>(
-        'http://localhost:3001/api/categories'
+        `${process.env.NUXT_PUBLIC_BACKEND_URL}/api/categories`
       );
 
       return response;
