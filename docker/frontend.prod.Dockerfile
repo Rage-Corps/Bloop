@@ -1,37 +1,43 @@
-FROM node:20-alpine
+# Simple build to inspect structure
+FROM node:22-alpine AS builder
 
-# Install pnpm and curl
 RUN corepack enable pnpm && apk add --no-cache curl
 
-# Set working directory
 WORKDIR /app
 
-# Copy workspace files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/frontend/package.json ./apps/frontend/package.json
-COPY packages/shared-types/package.json ./packages/shared-types/package.json
+# Copy everything first to see what we're working with
+COPY package.json pnpm-workspace.yaml ./
+COPY ./apps/frontend ./apps/frontend
+COPY ./packages ./packages
 
 # Install dependencies
+WORKDIR /app
 RUN pnpm install
 
-# Copy source code
-COPY packages/shared-types ./packages/shared-types
-COPY apps/frontend ./apps/frontend
+# Fix CSS path for Docker build
+WORKDIR /app/apps/frontend
+RUN sed -i "s|~/assets/css/main.css|./app/assets/css/main.css|g" nuxt.config.ts
 
-# Build shared-types first
-RUN cd packages/shared-types && pnpm build
+# Build the frontend in production mode
+ENV NODE_ENV=production
+RUN pnpm run build
 
-# Build frontend
-RUN cd apps/frontend && pnpm build
-
-# Expose port
-EXPOSE 3000
-
-# Set working directory to frontend
+# Stay in the frontend directory
 WORKDIR /app/apps/frontend
 
-# Set environment
+# Stage 2: Serve the Nuxt application
+FROM node:22-alpine AS runner
+
+WORKDIR /app
+
 ENV NODE_ENV=production
 
-# Start the application
-CMD ["node", ".output/server/index.mjs"]
+COPY --from=builder /app/apps/frontend/.output ./apps/frontend/.output
+
+WORKDIR /app/apps/frontend/.output
+
+EXPOSE 3000
+
+# Keep container running so we can inspect it
+# CMD ["tail", "-f", "/dev/null"]
+CMD ["node", "server/index.mjs"]
