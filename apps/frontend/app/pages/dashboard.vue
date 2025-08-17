@@ -19,6 +19,8 @@
             placeholder="Search media..."
             icon="i-heroicons-magnifying-glass"
             size="md"
+            type="search"
+            inputmode="search"
             @input="debouncedSearch"
           />
 
