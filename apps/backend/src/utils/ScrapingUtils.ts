@@ -169,9 +169,8 @@ export class ScrapingUtils {
   async startScrape(
     {
       forceMode,
-      waitTime,
       maxPages,
-    }: { forceMode: boolean; waitTime: number; maxPages?: number | undefined },
+    }: { forceMode: boolean; maxPages?: number | undefined },
     scrapingQueue: Queue<
       ScrapingJobData,
       any,
@@ -192,7 +191,6 @@ export class ScrapingUtils {
         baseUrl: this.baseUrl,
         pageLinks: firstPageLinks,
         forceMode,
-        waitTime,
         status: 'pending',
         createdAt: new Date().toISOString(),
       },
@@ -219,8 +217,7 @@ export class ScrapingUtils {
               baseUrl: this.baseUrl,
               pageLinks,
               forceMode,
-              waitTime,
-              status: 'pending',
+                    status: 'pending',
               createdAt: new Date().toISOString(),
             },
             {

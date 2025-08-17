@@ -14,12 +14,6 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
           properties: {
             maxPages: { type: 'number', minimum: 1, maximum: 100 },
             forceMode: { type: 'boolean', default: false },
-            waitTime: {
-              type: 'number',
-              minimum: 100,
-              maximum: 10000,
-              default: 1000,
-            },
           },
         },
         response: {
@@ -33,7 +27,6 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
                 properties: {
                   maxPages: { type: 'number' },
                   forceMode: { type: 'boolean' },
-                  waitTime: { type: 'number' },
                 },
               },
             },
@@ -45,11 +38,9 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
       const {
         maxPages,
         forceMode = false,
-        waitTime = 1000,
       } = request.body as {
         maxPages?: number;
         forceMode?: boolean;
-        waitTime?: number;
       };
 
       const baseUrl = process.env.BASE_SCRAPE_URL;
@@ -65,7 +56,6 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
         {
           maxPages,
           forceMode,
-          waitTime,
         },
         scrapingQueue
       );
@@ -81,7 +71,6 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
         data: {
           maxPages,
           forceMode,
-          waitTime,
         },
       };
     }

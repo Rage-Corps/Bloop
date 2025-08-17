@@ -2,7 +2,6 @@ export interface BaseJobData {
   id: string
   baseUrl: string
   forceMode: boolean
-  waitTime: number
   status: 'pending' | 'processing' | 'completed' | 'failed'
   createdAt: string
 }

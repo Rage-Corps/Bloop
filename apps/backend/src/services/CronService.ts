@@ -53,7 +53,6 @@ export class CronService {
       const jobIds = await scrapeUtil.startScrape(
         {
           forceMode: false,
-          waitTime: 1000,
         },
         scrapingQueue
       );
