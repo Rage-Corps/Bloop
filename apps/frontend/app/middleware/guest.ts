@@ -5,8 +5,15 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   // Wait for session to load on client side
   if (import.meta.client) {
     await nextTick();
-    // Give session a moment to hydrate
-    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Wait for session to properly hydrate with a timeout
+    let attempts = 0;
+    const maxAttempts = 20; // 2 seconds max
+    
+    while (session.value?.isPending && attempts < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      attempts++;
+    }
   }
 
   // Only redirect authenticated users from login/register pages

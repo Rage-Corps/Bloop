@@ -36,7 +36,9 @@
               @change="filterMedia"
             />
             <template #fallback>
-              <div class="min-w-[200px] h-10 bg-gray-800 rounded-md animate-pulse"></div>
+              <div
+                class="min-w-[200px] h-10 bg-gray-800 rounded-md animate-pulse"
+              ></div>
             </template>
           </ClientOnly>
 
@@ -52,7 +54,9 @@
               @change="filterMedia"
             />
             <template #fallback>
-              <div class="min-w-[200px] h-10 bg-gray-800 rounded-md animate-pulse"></div>
+              <div
+                class="min-w-[200px] h-10 bg-gray-800 rounded-md animate-pulse"
+              ></div>
             </template>
           </ClientOnly>
 
@@ -203,8 +207,12 @@ const loadMedia = async () => {
       limit: itemsPerPage,
       offset: offset.value,
       source: searchQuery.value || undefined,
-      categories: selectedCategories.value.length > 0 ? selectedCategories.value : undefined,
-      sources: selectedSources.value.length > 0 ? selectedSources.value : undefined,
+      categories:
+        selectedCategories.value.length > 0
+          ? selectedCategories.value
+          : undefined,
+      sources:
+        selectedSources.value.length > 0 ? selectedSources.value : undefined,
     });
     mediaData.value = response;
   } catch (err) {
