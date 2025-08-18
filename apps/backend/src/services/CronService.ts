@@ -35,29 +35,38 @@ export class CronService {
     }
 
     this.currentTask = cron.schedule(frequency, async () => {
-      const baseUrl = process.env.BASE_SCRAPE_URL;
+      try {
+        const baseUrl = process.env.BASE_SCRAPE_URL;
 
-      if (!baseUrl) {
-        return { error: 'BASE_SCRAPE_URL not configured on Schedule' };
+        if (!baseUrl) {
+          console.error('🕒 BASE_SCRAPE_URL not configured on Schedule');
+          return { error: 'BASE_SCRAPE_URL not configured on Schedule' };
+        }
+
+        const waitingJobs = await scrapingQueue.getWaiting();
+
+        if (waitingJobs.length) {
+          console.log(`🕒 Things are still waiting did not do cron`);
+          return { message: 'Jobs still in queue, skipping cron execution' };
+        }
+
+        const scrapeUtil = new ScrapingUtils(baseUrl);
+
+        const jobIds = await scrapeUtil.startScrape(
+          {
+            forceMode: false,
+          },
+          scrapingQueue
+        );
+
+        console.log(`🕒 Cron job executed successfully, started jobs: ${jobIds.join(',')}`);
+        return jobIds;
+      } catch (error) {
+        console.error('🕒 Cron job failed with error:', error);
+        console.log('🕒 Cron will retry on next scheduled execution');
+        // Don't throw the error to prevent cron from stopping
+        return { error: 'Cron job failed, will retry on next execution' };
       }
-
-      const waitingJobs = await scrapingQueue.getWaiting();
-
-      if (waitingJobs.length) {
-        console.log(`🕒 Things are still waiting did not do cron`);
-        return { message: 'Jobs still in queue, skipping cron execution' };
-      }
-
-      const scrapeUtil = new ScrapingUtils(baseUrl);
-
-      const jobIds = await scrapeUtil.startScrape(
-        {
-          forceMode: false,
-        },
-        scrapingQueue
-      );
-
-      return jobIds;
     });
 
     console.log(`🕒 Cron job scheduled with frequency: ${frequency}`);

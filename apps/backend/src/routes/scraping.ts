@@ -12,7 +12,7 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
         body: {
           type: 'object',
           properties: {
-            maxPages: { type: 'number', minimum: 1, maximum: 100 },
+            maxPages: { type: 'number', minimum: 1 },
             forceMode: { type: 'boolean', default: false },
           },
         },
