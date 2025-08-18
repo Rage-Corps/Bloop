@@ -17,6 +17,7 @@
           v-model:search-query="searchQuery"
           v-model:selected-categories="selectedCategories"
           v-model:selected-sources="selectedSources"
+          v-model:excluded-categories="excludedCategories"
           :available-categories="availableCategories"
           :available-sources="availableSources"
           :loading="loading"
@@ -123,6 +124,7 @@ const selectedMedia = ref<MediaWithMetadata | null>(null);
 // Filter data
 const selectedCategories = ref<string[]>([]);
 const selectedSources = ref<string[]>([]);
+const excludedCategories = ref<string[]>([]);
 const availableCategories = ref<{ label: string; value: string }[]>([]);
 const availableSources = ref<{ label: string; value: string }[]>([]);
 
@@ -167,6 +169,10 @@ const loadMedia = async () => {
           : undefined,
       sources:
         selectedSources.value.length > 0 ? selectedSources.value : undefined,
+      excludedCategories:
+        excludedCategories.value.length > 0
+          ? excludedCategories.value
+          : undefined,
     });
     mediaData.value = response;
   } catch (err) {
@@ -182,6 +188,7 @@ const filterMedia = () => {
 const refreshMedia = () => {
   selectedCategories.value = [];
   selectedSources.value = [];
+  excludedCategories.value = [];
   searchQuery.value = '';
   router.push({ query: { page: 1 } });
   loadMedia();

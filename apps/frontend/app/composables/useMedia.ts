@@ -31,6 +31,10 @@ export const useMedia = () => {
         params.append('sources', query.sources.join(','));
       }
 
+      if (query.excludedCategories && query.excludedCategories.length > 0) {
+        params.append('excludedCategories', query.excludedCategories.join(','));
+      }
+
       const queryString = `${config.public.backendUrl}/api/media?${params.toString()}`;
       console.log('QUERY:', queryString);
       const response = await $fetch<MediaListResponse>(queryString);
