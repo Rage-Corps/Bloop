@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean } from 'drizzle-orm/pg-core'
+import { pgTable, text, timestamp, boolean, json } from 'drizzle-orm/pg-core'
 
 export const media = pgTable('media', {
   id: text('id').primaryKey(),
@@ -88,6 +88,20 @@ export const verification = pgTable("verification", {
 export const settings = pgTable("settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
+  updatedAt: timestamp("updated_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
+});
+
+export const userConfig = pgTable("user_config", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  preferences: json("preferences").notNull().$defaultFn(() => ({})),
+  createdAt: timestamp("created_at")
+    .$defaultFn(() => new Date())
+    .notNull(),
   updatedAt: timestamp("updated_at")
     .$defaultFn(() => new Date())
     .notNull(),
