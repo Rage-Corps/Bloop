@@ -1,13 +1,36 @@
 import { FastifyInstance } from 'fastify';
 import { UserConfigDao, UserPreferences } from '../dao/userConfigDao';
+import { auth } from '../auth';
 
 const userConfigDao = new UserConfigDao();
+
+// Authentication middleware
+const authenticateUser = async (request: any, reply: any) => {
+  try {
+    // Get the session from Better Auth
+    const session = await auth.api.getSession({
+      headers: request.headers,
+    });
+
+    if (!session?.user?.id) {
+      reply.code(401);
+      throw new Error('Authentication required');
+    }
+
+    // Attach user to request
+    request.user = session.user;
+  } catch (error) {
+    reply.code(401);
+    throw new Error('Authentication required');
+  }
+};
 
 export default async function userConfigRoutes(fastify: FastifyInstance) {
   // Get user config
   fastify.get(
     '/user-config',
     {
+      preHandler: authenticateUser,
       schema: {
         description: 'Get user configuration and preferences',
         tags: ['user-config'],
@@ -35,14 +58,7 @@ export default async function userConfigRoutes(fastify: FastifyInstance) {
       }
     },
     async (request, reply) => {
-      // TODO: Get user ID from authentication middleware
-      // For now, using a placeholder - you'll need to integrate with your auth system
       const userId = (request as any).user?.id;
-      
-      if (!userId) {
-        reply.code(401);
-        return { error: 'Authentication required' };
-      }
 
       const config = await userConfigDao.getUserConfig(userId);
       
@@ -69,6 +85,7 @@ export default async function userConfigRoutes(fastify: FastifyInstance) {
   fastify.put(
     '/user-config',
     {
+      preHandler: authenticateUser,
       schema: {
         description: 'Update user configuration and preferences',
         tags: ['user-config'],
@@ -113,11 +130,6 @@ export default async function userConfigRoutes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const userId = (request as any).user?.id;
-      
-      if (!userId) {
-        reply.code(401);
-        return { error: 'Authentication required' };
-      }
 
       const { preferences } = request.body as { preferences: UserPreferences };
 
@@ -135,6 +147,7 @@ export default async function userConfigRoutes(fastify: FastifyInstance) {
   fastify.patch(
     '/user-config',
     {
+      preHandler: authenticateUser,
       schema: {
         description: 'Partially update user configuration and preferences',
         tags: ['user-config'],
@@ -173,11 +186,6 @@ export default async function userConfigRoutes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const userId = (request as any).user?.id;
-      
-      if (!userId) {
-        reply.code(401);
-        return { error: 'Authentication required' };
-      }
 
       const preferences = request.body as Partial<UserPreferences>;
 
