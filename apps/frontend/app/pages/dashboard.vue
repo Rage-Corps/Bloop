@@ -127,7 +127,7 @@ const selectedMedia = ref<MediaWithMetadata | null>(null);
 const selectedCategories = ref<string[]>([]);
 const selectedSources = ref<string[]>([]);
 const excludedCategories = ref<string[]>([]);
-const preferredSource = ref<string | null | undefined>(null);
+const preferredSource = ref<string | undefined>(undefined);
 const availableCategories = ref<{ label: string; value: string }[]>([]);
 const availableSources = ref<{ label: string; value: string }[]>([]);
 
@@ -217,7 +217,7 @@ const refreshMedia = () => {
   selectedCategories.value = [];
   selectedSources.value = [];
   excludedCategories.value = [];
-  preferredSource.value = null;
+  preferredSource.value = undefined;
   searchQuery.value = '';
   router.push({ query: { page: 1 } });
   loadMedia();
