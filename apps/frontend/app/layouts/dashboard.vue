@@ -11,33 +11,32 @@
 
           <!-- User Menu -->
           <div class="flex items-center space-x-4">
-            <div class="hidden sm:flex items-center space-x-3">
-              <UAvatar
-                :alt="user?.name || user?.email || 'User'"
-                size="sm"
-                :ui="{ icon: 'bg-primary-500' }"
-              >
-                {{ getUserInitials() }}
-              </UAvatar>
-              <div class="text-sm">
-                <p class="font-medium text-white">
-                  {{ user?.name || 'User' }}
-                </p>
-                <p class="text-gray-500">{{ user?.email }}</p>
+            <ClientOnly>
+              <div class="hidden sm:flex items-center space-x-3">
+                <UAvatar
+                  :alt="user?.name || user?.email || 'User'"
+                  size="sm"
+                  :ui="{ icon: 'bg-primary-500' }"
+                >
+                  {{ getUserInitials() }}
+                </UAvatar>
+                <div class="text-sm">
+                  <p class="font-medium text-white">
+                    {{ user?.name || 'User' }}
+                  </p>
+                  <p class="text-gray-500">{{ user?.email }}</p>
+                </div>
               </div>
-            </div>
-
-            <UDropdown
-              :items="userMenuItems"
-              :popper="{ placement: 'bottom-end' }"
-            >
-              <UButton
-                color="info"
-                variant="ghost"
-                icon="i-heroicons-ellipsis-vertical"
-                size="sm"
-              />
-            </UDropdown>
+              <template #fallback>
+                <div class="hidden sm:flex items-center space-x-3">
+                  <div class="w-8 h-8 bg-gray-700 rounded-full animate-pulse"></div>
+                  <div class="text-sm">
+                    <div class="w-16 h-4 bg-gray-700 rounded animate-pulse mb-1"></div>
+                    <div class="w-24 h-3 bg-gray-700 rounded animate-pulse"></div>
+                  </div>
+                </div>
+              </template>
+            </ClientOnly>
           </div>
         </div>
       </div>

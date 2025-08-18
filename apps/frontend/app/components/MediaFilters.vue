@@ -10,43 +10,29 @@
       @input="handleSearchInput"
     />
 
-    <ClientOnly>
-      <USelect
-        :model-value="selectedCategories"
-        :items="availableCategories"
-        placeholder="Categories"
-        multiple
-        searchable
-        size="md"
-        class="min-w-[200px]"
-        @update:model-value="$emit('update:selectedCategories', $event)"
-        @change="$emit('filter')"
-      />
-      <template #fallback>
-        <div
-          class="min-w-[200px] h-10 bg-gray-800 rounded-md animate-pulse"
-        ></div>
-      </template>
-    </ClientOnly>
+    <USelect
+      :model-value="selectedCategories"
+      :items="availableCategories"
+      placeholder="Categories"
+      multiple
+      searchable
+      size="md"
+      class="min-w-[200px]"
+      @update:model-value="$emit('update:selectedCategories', $event)"
+      @change="$emit('filter')"
+    />
 
-    <ClientOnly>
-      <USelect
-        :model-value="selectedSources"
-        :items="availableSources"
-        placeholder="Sources"
-        multiple
-        searchable
-        size="md"
-        class="min-w-[200px]"
-        @update:model-value="$emit('update:selectedSources', $event)"
-        @change="$emit('filter')"
-      />
-      <template #fallback>
-        <div
-          class="min-w-[200px] h-10 bg-gray-800 rounded-md animate-pulse"
-        ></div>
-      </template>
-    </ClientOnly>
+    <USelect
+      :model-value="selectedSources"
+      :items="availableSources"
+      placeholder="Sources"
+      multiple
+      searchable
+      size="md"
+      class="min-w-[200px]"
+      @update:model-value="$emit('update:selectedSources', $event)"
+      @change="$emit('filter')"
+    />
 
     <UButton
       color="primary"
@@ -67,21 +53,21 @@ defineProps({
   selectedSources: Array,
   availableCategories: Array,
   availableSources: Array,
-  loading: Boolean
-})
+  loading: Boolean,
+});
 
 const emit = defineEmits([
   'update:searchQuery',
-  'update:selectedCategories', 
+  'update:selectedCategories',
   'update:selectedSources',
   'search',
   'filter',
-  'refresh'
-])
+  'refresh',
+]);
 
 const handleSearchInput = (event) => {
-  const value = event.target?.value || event
-  emit('update:searchQuery', value)
-  emit('search')
-}
+  const value = event.target?.value || event;
+  emit('update:searchQuery', value);
+  emit('search');
+};
 </script>
