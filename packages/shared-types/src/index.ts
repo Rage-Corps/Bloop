@@ -92,6 +92,20 @@ export interface Session {
   updatedAt: string;
 }
 
+// User Config types
+export interface UserPreferences {
+  excludedCategories?: string[];
+  preferredSource?: string;
+}
+
+export interface UserConfig {
+  id: string;
+  userId: string;
+  preferences: UserPreferences;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // API Error response
 export interface ApiError {
   error: string;
