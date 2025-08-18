@@ -111,6 +111,7 @@ const route = useRoute();
 const { fetchMedia, loading, error } = useMedia();
 const { fetchCategories } = useCategories();
 const { fetchSources } = useSources();
+const { getUserConfig } = useUserConfig();
 
 // Get current page from query parameters, default to 1
 const currentPage = computed(() => parseInt(route.query.page as string) || 1);
@@ -126,7 +127,7 @@ const selectedMedia = ref<MediaWithMetadata | null>(null);
 const selectedCategories = ref<string[]>([]);
 const selectedSources = ref<string[]>([]);
 const excludedCategories = ref<string[]>([]);
-const preferredSource = ref<string | null>(null);
+const preferredSource = ref<string | null | undefined>(null);
 const availableCategories = ref<{ label: string; value: string }[]>([]);
 const availableSources = ref<{ label: string; value: string }[]>([]);
 
@@ -155,6 +156,31 @@ const loadSources = async () => {
     }));
   } catch (err) {
     console.error('Failed to load sources:', err);
+  }
+};
+
+const loadUserPreferences = async () => {
+  try {
+    const userConfig = await getUserConfig();
+    if (userConfig?.preferences) {
+      const {
+        excludedCategories: userExcludedCategories,
+        preferredSource: userPreferredSource,
+      } = userConfig.preferences;
+
+      if (userExcludedCategories?.length) {
+        excludedCategories.value = userExcludedCategories;
+      }
+
+      if (userPreferredSource) {
+        preferredSource.value = userPreferredSource;
+      }
+
+      console.log('Loaded user preferences:', userConfig.preferences);
+    }
+  } catch (err) {
+    console.warn('Failed to load user preferences:', err);
+    // Don't block the app if preferences can't be loaded
   }
 };
 
@@ -221,7 +247,10 @@ const closeMediaDetail = () => {
 };
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
+  // Load user preferences first, then load data with those preferences applied
+  await loadUserPreferences();
+
   loadMedia();
   loadCategories();
   loadSources();
