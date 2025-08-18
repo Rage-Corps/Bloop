@@ -43,7 +43,7 @@ export interface MediaListResponse {
 export interface MediaQuery {
   limit?: number;
   offset?: number;
-  source?: string;
+  name?: string;
   categories?: string[];
   sources?: string[];
 }

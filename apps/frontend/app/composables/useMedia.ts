@@ -20,7 +20,7 @@ export const useMedia = () => {
 
       if (query.limit) params.append('limit', query.limit.toString());
       if (query.offset) params.append('offset', query.offset.toString());
-      if (query.source) params.append('source', query.source);
+      if (query.name) params.append('name', query.name);
 
       // Handle array parameters for categories and sources
       if (query.categories && query.categories.length > 0) {
@@ -31,9 +31,9 @@ export const useMedia = () => {
         params.append('sources', query.sources.join(','));
       }
 
-      const response = await $fetch<MediaListResponse>(
-        `${config.public.backendUrl}/api/media?${params.toString()}`
-      );
+      const queryString = `${config.public.backendUrl}/api/media?${params.toString()}`;
+      console.log('QUERY:', queryString);
+      const response = await $fetch<MediaListResponse>(queryString);
 
       return response;
     } catch (err: any) {

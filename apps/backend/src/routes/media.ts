@@ -16,7 +16,7 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
           properties: {
             limit: { type: 'number', default: 20 },
             offset: { type: 'number', default: 0 },
-            source: { type: 'string' },
+            name: { type: 'string' },
             categories: { type: 'string' },
             sources: { type: 'string' },
           },
@@ -69,7 +69,7 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
       const query: MediaQuery = {
         limit: rawQuery.limit,
         offset: rawQuery.offset,
-        source: rawQuery.source,
+        name: rawQuery.name,
         categories: rawQuery.categories
           ? rawQuery.categories.split(',').map((c: string) => c.trim())
           : undefined,

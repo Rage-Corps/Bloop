@@ -206,7 +206,7 @@ const loadMedia = async () => {
     const response = await fetchMedia({
       limit: itemsPerPage,
       offset: offset.value,
-      source: searchQuery.value || undefined,
+      name: searchQuery.value || undefined,
       categories:
         selectedCategories.value.length > 0
           ? selectedCategories.value

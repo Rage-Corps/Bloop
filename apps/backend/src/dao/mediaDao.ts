@@ -54,7 +54,7 @@ export class MediaDao {
     const {
       limit = 20,
       offset = 0,
-      source,
+      name,
       categories: filterCategories,
       sources: filterSources,
     } = query;
@@ -62,8 +62,8 @@ export class MediaDao {
     // Build where conditions for media table
     const whereConditions: any[] = [];
 
-    if (source) {
-      whereConditions.push(ilike(media.name, `%${source}%`));
+    if (name) {
+      whereConditions.push(ilike(media.name, `%${name}%`));
     }
 
     // Build media IDs subquery based on filters
