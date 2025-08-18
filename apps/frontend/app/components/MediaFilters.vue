@@ -116,6 +116,8 @@
 </template>
 
 <script setup>
+import { debounce } from 'lodash-es';
+
 const props = defineProps({
   searchQuery: String,
   selectedCategories: Array,
@@ -141,11 +143,23 @@ const emit = defineEmits([
 // Local state for preferences accordion
 const showPreferences = ref(false);
 
+const { patchUserConfig } = useUserConfig();
+
 // Debug: log available sources
 watchEffect(() => {
   console.log('Available sources:', props.availableSources);
   console.log('Available sources length:', props.availableSources?.length);
 });
+
+// Debounced save function to prevent too many API calls
+const debouncedSavePreferences = debounce(async (preferences) => {
+  try {
+    await patchUserConfig(preferences);
+    console.log('Preferences saved:', preferences);
+  } catch (error) {
+    console.error('Failed to save preferences:', error);
+  }
+}, 1000);
 
 const handleSearchInput = (event) => {
   const value = event.target?.value || event;
@@ -156,11 +170,18 @@ const handleSearchInput = (event) => {
 const handleExcludedCategoriesChange = (value) => {
   emit('update:excludedCategories', value);
   emit('filter');
+
+  // Auto-save excluded categories
+  debouncedSavePreferences({ excludedCategories: value });
 };
 
 const handlePreferredSourceChange = (value) => {
   console.log('Preferred source changed to:', value);
-  emit('update:preferredSource', value || null);
+  const sourceValue = value || null;
+  emit('update:preferredSource', sourceValue);
   emit('filter');
+
+  // Auto-save preferred source
+  debouncedSavePreferences({ preferredSource: sourceValue });
 };
 </script>
