@@ -57,6 +57,7 @@ export class MediaDao {
       name,
       categories: filterCategories,
       sources: filterSources,
+      excludedCategories,
     } = query;
 
     // Build base query with joins for all potential filters
@@ -96,6 +97,19 @@ export class MediaDao {
     // Apply name filter if provided
     if (name) {
       whereConditions.push(ilike(media.name, `%${name}%`));
+    }
+
+    // Exclude media with specified categories
+    if (excludedCategories && excludedCategories.length > 0) {
+      // Subquery to find media IDs that have any of the excluded categories
+      const excludedMediaSubquery = db
+        .select({ mediaId: categories.mediaId })
+        .from(categories)
+        .where(inArray(categories.category, excludedCategories));
+      
+      whereConditions.push(
+        sql`${media.id} NOT IN ${excludedMediaSubquery}`
+      );
     }
 
     // Apply all where conditions together (AND logic)

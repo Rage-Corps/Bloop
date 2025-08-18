@@ -46,6 +46,7 @@ export interface MediaQuery {
   name?: string;
   categories?: string[];
   sources?: string[];
+  excludedCategories?: string[];
 }
 
 // Create media input

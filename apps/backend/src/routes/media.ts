@@ -19,6 +19,7 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
             name: { type: 'string' },
             categories: { type: 'string' },
             sources: { type: 'string' },
+            excludedCategories: { type: 'string' },
           },
         },
         response: {
@@ -75,6 +76,9 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
           : undefined,
         sources: rawQuery.sources
           ? rawQuery.sources.split(',').map((s: string) => s.trim())
+          : undefined,
+        excludedCategories: rawQuery.excludedCategories
+          ? rawQuery.excludedCategories.split(',').map((c: string) => c.trim())
           : undefined,
       };
 
