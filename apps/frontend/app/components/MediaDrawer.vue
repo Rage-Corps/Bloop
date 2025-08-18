@@ -114,6 +114,7 @@ import type { MediaWithMetadata } from '@bloop/shared-types';
 interface Props {
   media: MediaWithMetadata | null;
   isOpen: boolean;
+  preferredSource?: string;
 }
 
 const props = defineProps<Props>();
@@ -150,23 +151,49 @@ const selectedSource = computed(() => {
   );
 });
 
+// Function to set default source based on preferred source
+const setDefaultSource = () => {
+  if (!props.media?.sources?.length) {
+    selectedSourceId.value = undefined;
+    return;
+  }
+
+  // Try to find preferred source first
+  if (props.preferredSource) {
+    const preferredSourceObj = props.media.sources.find(
+      (source) => source.sourceName === props.preferredSource
+    );
+    if (preferredSourceObj) {
+      selectedSourceId.value = preferredSourceObj.id;
+      console.log('Set default source to preferred:', props.preferredSource);
+      return;
+    }
+  }
+
+  // Fallback to first source if preferred not found
+  selectedSourceId.value = props.media.sources[0]?.id;
+  console.log('Set default source to first available:', props.media.sources[0]?.sourceName);
+};
+
 // Reset selected source when media changes
 watch(
   () => props.media,
   (newMedia) => {
     console.log('Media prop changed:', newMedia);
     console.log('New media sources:', newMedia?.sources);
-    selectedSourceId.value = undefined;
+    setDefaultSource();
   }
 );
 
-// Debug when drawer opens
+// Set default source when drawer opens or preferred source changes
 watch(
-  () => props.isOpen,
-  (isOpen) => {
+  [() => props.isOpen, () => props.preferredSource],
+  ([isOpen]) => {
     console.log('Drawer isOpen changed:', isOpen);
     if (isOpen) {
       console.log('Drawer opened with media:', props.media);
+      console.log('Preferred source:', props.preferredSource);
+      setDefaultSource();
     }
   }
 );

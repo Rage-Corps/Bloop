@@ -91,6 +91,7 @@
     <MediaDrawer
       :media="selectedMedia"
       :is-open="showMediaDetail"
+      :preferred-source="preferredSource"
       @close="closeMediaDetail"
     />
   </div>
