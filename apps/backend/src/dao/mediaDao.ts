@@ -1,6 +1,6 @@
 import { db } from '../db/connection';
 import { media, sources, categories } from '../db/schema';
-import { eq, and, inArray, ilike } from 'drizzle-orm';
+import { eq, and, inArray, ilike, sql } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import type { MediaListResponse, MediaQuery } from '@bloop/shared-types';
 
@@ -59,37 +59,55 @@ export class MediaDao {
       sources: filterSources,
     } = query;
 
-    // Build where conditions for media table
+    // Build base query with joins for all potential filters
+    let mediaIdsQuery = db.selectDistinct({ id: media.id }).from(media);
     const whereConditions: any[] = [];
 
+    // For categories: media must have ALL specified categories
+    if (filterCategories && filterCategories.length > 0) {
+      // Subquery to find media IDs that have ALL required categories
+      const categoriesSubquery = db
+        .select({ mediaId: categories.mediaId })
+        .from(categories)
+        .where(inArray(categories.category, filterCategories))
+        .groupBy(categories.mediaId)
+        .having(sql`COUNT(DISTINCT ${categories.category}) = ${filterCategories.length}`);
+      
+      whereConditions.push(
+        sql`${media.id} IN ${categoriesSubquery}`
+      );
+    }
+
+    // For sources: media must have ALL specified sources
+    if (filterSources && filterSources.length > 0) {
+      // Subquery to find media IDs that have ALL required sources
+      const sourcesSubquery = db
+        .select({ mediaId: sources.mediaId })
+        .from(sources)
+        .where(inArray(sources.sourceName, filterSources))
+        .groupBy(sources.mediaId)
+        .having(sql`COUNT(DISTINCT ${sources.sourceName}) = ${filterSources.length}`);
+      
+      whereConditions.push(
+        sql`${media.id} IN ${sourcesSubquery}`
+      );
+    }
+
+    // Apply name filter if provided
     if (name) {
       whereConditions.push(ilike(media.name, `%${name}%`));
     }
 
-    // Build media IDs subquery based on filters
-    let mediaIdsQuery = db.selectDistinct({ id: media.id }).from(media);
-
-    // Apply category filter if provided
-    if (filterCategories && filterCategories.length > 0) {
-      mediaIdsQuery = db.selectDistinct({ id: media.id })
-        .from(media)
-        .innerJoin(categories, eq(categories.mediaId, media.id))
-        .where(inArray(categories.category, filterCategories)) as any;
-    }
-
-    // Apply source filter if provided
-    if (filterSources && filterSources.length > 0) {
-      mediaIdsQuery = db.selectDistinct({ id: media.id })
-        .from(media)
-        .innerJoin(sources, eq(sources.mediaId, media.id))
-        .where(inArray(sources.sourceName, filterSources)) as any;
-    }
-
-    // Apply text search filter
+    // Apply all where conditions together (AND logic)
     if (whereConditions.length > 0) {
       mediaIdsQuery = (mediaIdsQuery as any).where(and(...whereConditions));
     }
 
+    // Log the SQL query for debugging
+    const sqlQuery = mediaIdsQuery.toSQL();
+    console.log('SQL Query:', sqlQuery.sql);
+    console.log('SQL Params:', sqlQuery.params);
+    
     // Get filtered media IDs
     const filteredMediaIds = await mediaIdsQuery;
     const mediaIds = filteredMediaIds.map((item) => item.id);
