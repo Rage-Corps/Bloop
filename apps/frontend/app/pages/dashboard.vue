@@ -18,6 +18,7 @@
           v-model:selected-categories="selectedCategories"
           v-model:selected-sources="selectedSources"
           v-model:excluded-categories="excludedCategories"
+          v-model:preferred-source="preferredSource"
           :available-categories="availableCategories"
           :available-sources="availableSources"
           :loading="loading"
@@ -125,6 +126,7 @@ const selectedMedia = ref<MediaWithMetadata | null>(null);
 const selectedCategories = ref<string[]>([]);
 const selectedSources = ref<string[]>([]);
 const excludedCategories = ref<string[]>([]);
+const preferredSource = ref<string | null>(null);
 const availableCategories = ref<{ label: string; value: string }[]>([]);
 const availableSources = ref<{ label: string; value: string }[]>([]);
 
@@ -189,6 +191,7 @@ const refreshMedia = () => {
   selectedCategories.value = [];
   selectedSources.value = [];
   excludedCategories.value = [];
+  preferredSource.value = null;
   searchQuery.value = '';
   router.push({ query: { page: 1 } });
   loadMedia();

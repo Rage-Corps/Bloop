@@ -71,20 +71,44 @@
         v-if="showPreferences"
         class="bg-gray-800/50 border border-gray-700 rounded-lg p-4 space-y-4 overflow-hidden"
       >
-        <div>
-          <label class="block text-sm font-medium text-gray-300 mb-2">
-            Exclude Categories
-          </label>
-          <USelect
-            :model-value="excludedCategories"
-            :items="availableCategories"
-            placeholder="Select categories to exclude..."
-            multiple
-            searchable
-            size="md"
-            class="w-full"
-            @update:model-value="handleExcludedCategoriesChange"
-          />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              Exclude Categories
+            </label>
+            <USelect
+              :model-value="excludedCategories"
+              :items="availableCategories"
+              placeholder="Select categories to exclude..."
+              multiple
+              searchable
+              size="md"
+              class="w-full"
+              @update:model-value="handleExcludedCategoriesChange"
+            />
+            <p class="text-xs text-gray-400 mt-1">
+              Media with these categories will be hidden from your results
+            </p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              Preferred Source
+            </label>
+            <USelect
+              :model-value="preferredSource"
+              :items="availableSources"
+              placeholder="Select preferred source..."
+              searchable
+              clearable
+              size="md"
+              class="w-full"
+              @update:model-value="handlePreferredSourceChange"
+            />
+            <p class="text-xs text-gray-400 mt-1">
+              Prioritize media from this source when available
+            </p>
+          </div>
         </div>
       </div>
     </Transition>
@@ -92,13 +116,14 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
   searchQuery: String,
   selectedCategories: Array,
   selectedSources: Array,
   availableCategories: Array,
   availableSources: Array,
   excludedCategories: Array,
+  preferredSource: String,
   loading: Boolean,
 });
 
@@ -107,6 +132,7 @@ const emit = defineEmits([
   'update:selectedCategories',
   'update:selectedSources',
   'update:excludedCategories',
+  'update:preferredSource',
   'search',
   'filter',
   'refresh',
@@ -114,6 +140,12 @@ const emit = defineEmits([
 
 // Local state for preferences accordion
 const showPreferences = ref(false);
+
+// Debug: log available sources
+watchEffect(() => {
+  console.log('Available sources:', props.availableSources);
+  console.log('Available sources length:', props.availableSources?.length);
+});
 
 const handleSearchInput = (event) => {
   const value = event.target?.value || event;
@@ -123,6 +155,12 @@ const handleSearchInput = (event) => {
 
 const handleExcludedCategoriesChange = (value) => {
   emit('update:excludedCategories', value);
+  emit('filter');
+};
+
+const handlePreferredSourceChange = (value) => {
+  console.log('Preferred source changed to:', value);
+  emit('update:preferredSource', value || null);
   emit('filter');
 };
 </script>
