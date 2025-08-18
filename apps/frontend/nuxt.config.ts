@@ -14,8 +14,23 @@ export default defineNuxtConfig({
     },
   },
 
+  devServer: {
+    host: '0.0.0.0',
+    port: 3000
+  },
+
   vite: {
     plugins: [tailwindcss()],
+    server: {
+      hmr: {
+        port: 3000,
+        host: '0.0.0.0'
+      },
+      watch: {
+        usePolling: true,
+        interval: 1000
+      }
+    }
   },
 
   css: ['~/assets/css/main.css'],
