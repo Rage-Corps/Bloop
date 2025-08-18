@@ -391,7 +391,12 @@ export class MediaDao {
     newLinks: string[];
     existingLinks: string[];
   }> {
-    if (pageLinks.length === 0) {
+    // Filter out invalid links (null, undefined, empty strings)
+    const validPageLinks = pageLinks.filter(
+      (link) => link && typeof link === 'string' && link.trim() !== ''
+    );
+
+    if (validPageLinks.length === 0) {
       return {
         existingCount: 0,
         newLinks: [],
@@ -399,20 +404,30 @@ export class MediaDao {
       };
     }
 
-    // Check which links already exist in the database
-    const existingMedia = await db
-      .select({ pageUrl: media.pageUrl })
-      .from(media)
-      .where(inArray(media.pageUrl, pageLinks));
+    try {
+      // Check which links already exist in the database
+      const existingMedia = await db
+        .select({ pageUrl: media.pageUrl })
+        .from(media)
+        .where(inArray(media.pageUrl, validPageLinks));
 
-    const existingLinks = existingMedia.map((item) => item.pageUrl);
-    const newLinks = pageLinks.filter((link) => !existingLinks.includes(link));
+      const existingLinks = existingMedia.map((item) => item.pageUrl);
+      const newLinks = validPageLinks.filter((link) => !existingLinks.includes(link));
 
-    return {
-      existingCount: existingLinks.length,
-      newLinks,
-      existingLinks,
-    };
+      return {
+        existingCount: existingLinks.length,
+        newLinks,
+        existingLinks,
+      };
+    } catch (error) {
+      console.error('❌ Error checking existing page links:', error);
+      // Return all links as new if query fails
+      return {
+        existingCount: 0,
+        newLinks: validPageLinks,
+        existingLinks: [],
+      };
+    }
   }
 
   async upsertMedia(input: CreateMediaInput): Promise<any> {
