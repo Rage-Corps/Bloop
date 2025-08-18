@@ -45,23 +45,23 @@ export default async function userConfigRoutes(fastify: FastifyInstance) {
                 properties: {
                   excludedCategories: {
                     type: 'array',
-                    items: { type: 'string' }
+                    items: { type: 'string' },
                   },
-                  preferredSource: { type: 'string' }
-                }
+                  preferredSource: { type: 'string' },
+                },
               },
               createdAt: { type: 'string' },
-              updatedAt: { type: 'string' }
-            }
-          }
-        }
-      }
+              updatedAt: { type: 'string' },
+            },
+          },
+        },
+      },
     },
-    async (request, reply) => {
+    async (request) => {
       const userId = (request as any).user?.id;
 
       const config = await userConfigDao.getUserConfig(userId);
-      
+
       if (!config) {
         // Return default empty preferences if no config exists
         return {
@@ -69,14 +69,14 @@ export default async function userConfigRoutes(fastify: FastifyInstance) {
           userId,
           preferences: {},
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         };
       }
 
       return {
         ...config,
         createdAt: config.createdAt.toISOString(),
-        updatedAt: config.updatedAt.toISOString()
+        updatedAt: config.updatedAt.toISOString(),
       };
     }
   );
@@ -97,13 +97,13 @@ export default async function userConfigRoutes(fastify: FastifyInstance) {
               properties: {
                 excludedCategories: {
                   type: 'array',
-                  items: { type: 'string' }
+                  items: { type: 'string' },
                 },
-                preferredSource: { type: 'string' }
-              }
-            }
+                preferredSource: { type: 'string' },
+              },
+            },
           },
-          required: ['preferences']
+          required: ['preferences'],
         },
         response: {
           200: {
@@ -116,19 +116,19 @@ export default async function userConfigRoutes(fastify: FastifyInstance) {
                 properties: {
                   excludedCategories: {
                     type: 'array',
-                    items: { type: 'string' }
+                    items: { type: 'string' },
                   },
-                  preferredSource: { type: 'string' }
-                }
+                  preferredSource: { type: 'string' },
+                },
               },
               createdAt: { type: 'string' },
-              updatedAt: { type: 'string' }
-            }
-          }
-        }
-      }
+              updatedAt: { type: 'string' },
+            },
+          },
+        },
+      },
     },
-    async (request, reply) => {
+    async (request) => {
       const userId = (request as any).user?.id;
 
       const { preferences } = request.body as { preferences: UserPreferences };
@@ -138,7 +138,7 @@ export default async function userConfigRoutes(fastify: FastifyInstance) {
       return {
         ...config,
         createdAt: config.createdAt.toISOString(),
-        updatedAt: config.updatedAt.toISOString()
+        updatedAt: config.updatedAt.toISOString(),
       };
     }
   );
@@ -156,10 +156,10 @@ export default async function userConfigRoutes(fastify: FastifyInstance) {
           properties: {
             excludedCategories: {
               type: 'array',
-              items: { type: 'string' }
+              items: { type: 'string' },
             },
-            preferredSource: { type: 'string' }
-          }
+            preferredSource: { type: 'string' },
+          },
         },
         response: {
           200: {
@@ -172,19 +172,19 @@ export default async function userConfigRoutes(fastify: FastifyInstance) {
                 properties: {
                   excludedCategories: {
                     type: 'array',
-                    items: { type: 'string' }
+                    items: { type: 'string' },
                   },
-                  preferredSource: { type: 'string' }
-                }
+                  preferredSource: { type: 'string' },
+                },
               },
               createdAt: { type: 'string' },
-              updatedAt: { type: 'string' }
-            }
-          }
-        }
-      }
+              updatedAt: { type: 'string' },
+            },
+          },
+        },
+      },
     },
-    async (request, reply) => {
+    async (request) => {
       const userId = (request as any).user?.id;
 
       const preferences = request.body as Partial<UserPreferences>;
@@ -194,7 +194,7 @@ export default async function userConfigRoutes(fastify: FastifyInstance) {
       return {
         ...config,
         createdAt: config.createdAt.toISOString(),
-        updatedAt: config.updatedAt.toISOString()
+        updatedAt: config.updatedAt.toISOString(),
       };
     }
   );
