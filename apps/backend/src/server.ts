@@ -56,6 +56,7 @@ const start = async () => {
   await fastify.register(require('@fastify/cors'), {
     origin: ['http://localhost:3000', 'https://bloop.smet-server.ddns.net'], // Your frontend URL
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 
   // Register Better Auth handler
