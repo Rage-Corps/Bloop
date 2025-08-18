@@ -13,63 +13,17 @@
         </div>
 
         <!-- Search and Filters -->
-        <div class="flex space-x-3 items-center">
-          <UInput
-            v-model="searchQuery"
-            placeholder="Search media..."
-            icon="i-heroicons-magnifying-glass"
-            size="md"
-            type="search"
-            inputmode="search"
-            @input="debouncedSearch"
-          />
-
-          <ClientOnly>
-            <USelect
-              v-model="selectedCategories"
-              :items="availableCategories"
-              placeholder="Categories"
-              multiple
-              searchable
-              size="md"
-              class="min-w-[200px]"
-              @change="filterMedia"
-            />
-            <template #fallback>
-              <div
-                class="min-w-[200px] h-10 bg-gray-800 rounded-md animate-pulse"
-              ></div>
-            </template>
-          </ClientOnly>
-
-          <ClientOnly>
-            <USelect
-              v-model="selectedSources"
-              :items="availableSources"
-              placeholder="Sources"
-              multiple
-              searchable
-              size="md"
-              class="min-w-[200px]"
-              @change="filterMedia"
-            />
-            <template #fallback>
-              <div
-                class="min-w-[200px] h-10 bg-gray-800 rounded-md animate-pulse"
-              ></div>
-            </template>
-          </ClientOnly>
-
-          <UButton
-            color="primary"
-            variant="soft"
-            icon="i-heroicons-arrow-path"
-            :loading="loading"
-            @click="refreshMedia"
-          >
-            Refresh
-          </UButton>
-        </div>
+        <MediaFilters
+          v-model:search-query="searchQuery"
+          v-model:selected-categories="selectedCategories"
+          v-model:selected-sources="selectedSources"
+          :available-categories="availableCategories"
+          :available-sources="availableSources"
+          :loading="loading"
+          @search="debouncedSearch"
+          @filter="filterMedia"
+          @refresh="refreshMedia"
+        />
       </div>
 
       <!-- Loading State -->
