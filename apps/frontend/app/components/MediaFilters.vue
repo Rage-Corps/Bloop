@@ -162,7 +162,7 @@ const debouncedSavePreferences = debounce(async (preferences) => {
 }, 1000);
 
 const handleSearchInput = (event) => {
-  const value = event.target?.value || event;
+  const value = event.target?.value || '';
   emit('update:searchQuery', value);
   emit('search');
 };
