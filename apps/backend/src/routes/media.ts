@@ -37,6 +37,9 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
                     thumbnailUrl: { type: 'string' },
                     pageUrl: { type: 'string' },
                     createdAt: { type: 'string' },
+                    dateAdded: { type: 'string', nullable: true },
+                    cast: { type: 'string', nullable: true },
+                    duration: { type: 'string', nullable: true },
                     sources: {
                       type: 'array',
                       items: {
@@ -109,6 +112,9 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
               thumbnailUrl: { type: 'string' },
               pageUrl: { type: 'string' },
               createdAt: { type: 'string' },
+              dateAdded: { type: 'string', nullable: true },
+              cast: { type: 'string', nullable: true },
+              duration: { type: 'string', nullable: true },
               sources: {
                 type: 'array',
                 items: {
@@ -162,6 +168,9 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
             description: { type: 'string' },
             thumbnailUrl: { type: 'string' },
             pageUrl: { type: 'string' },
+            dateAdded: { type: 'string' },
+            cast: { type: 'string' },
+            duration: { type: 'string' },
             sources: {
               type: 'array',
               items: {
@@ -188,6 +197,9 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
               thumbnailUrl: { type: 'string' },
               pageUrl: { type: 'string' },
               createdAt: { type: 'string' },
+              dateAdded: { type: 'string', nullable: true },
+              cast: { type: 'string', nullable: true },
+              duration: { type: 'string', nullable: true },
             },
           },
         },
@@ -199,6 +211,9 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
         description,
         thumbnailUrl,
         pageUrl,
+        dateAdded,
+        cast,
+        duration,
         sources = [],
         categories = [],
       } = request.body as {
@@ -206,6 +221,9 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
         description: string;
         thumbnailUrl: string;
         pageUrl: string;
+        dateAdded?: string;
+        cast?: string;
+        duration?: string;
         sources?: { sourceName: string; url: string }[];
         categories?: string[];
       };
@@ -215,6 +233,9 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
         description,
         thumbnailUrl,
         pageUrl,
+        dateAdded,
+        cast,
+        duration,
         sources,
         categories,
       });
@@ -243,6 +264,9 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
             description: { type: 'string' },
             thumbnailUrl: { type: 'string' },
             pageUrl: { type: 'string' },
+            dateAdded: { type: 'string' },
+            cast: { type: 'string' },
+            duration: { type: 'string' },
           },
         },
         response: {
@@ -255,6 +279,9 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
               thumbnailUrl: { type: 'string' },
               pageUrl: { type: 'string' },
               createdAt: { type: 'string' },
+              dateAdded: { type: 'string', nullable: true },
+              cast: { type: 'string', nullable: true },
+              duration: { type: 'string', nullable: true },
             },
           },
         },
@@ -267,6 +294,9 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
         description?: string;
         thumbnailUrl?: string;
         pageUrl?: string;
+        dateAdded?: string;
+        cast?: string;
+        duration?: string;
       };
 
       const updatedMedia = await mediaDao.updateMedia(id, updateData);

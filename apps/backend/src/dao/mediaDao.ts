@@ -197,6 +197,7 @@ export class MediaDao {
     const data = mediaItems.map((item) => ({
       ...item,
       createdAt: item.createdAt?.toISOString() || null,
+      dateAdded: item.dateAdded?.toISOString() || null,
       sources: sourcesByMediaId[item.id] || [],
       categories: categoriesByMediaId[item.id] || [],
     }));
@@ -244,6 +245,9 @@ export class MediaDao {
         description: input.description,
         thumbnailUrl: input.thumbnailUrl,
         pageUrl: input.pageUrl,
+        dateAdded: input.dateAdded ? new Date(input.dateAdded) : null,
+        cast: input.cast || null,
+        duration: input.duration || null,
       })
       .returning();
 
@@ -280,9 +284,21 @@ export class MediaDao {
       return null;
     }
 
+    const updateData: any = {};
+    if (input.name !== undefined) updateData.name = input.name;
+    if (input.description !== undefined)
+      updateData.description = input.description;
+    if (input.thumbnailUrl !== undefined)
+      updateData.thumbnailUrl = input.thumbnailUrl;
+    if (input.pageUrl !== undefined) updateData.pageUrl = input.pageUrl;
+    if (input.dateAdded !== undefined)
+      updateData.dateAdded = input.dateAdded ? new Date(input.dateAdded) : null;
+    if (input.cast !== undefined) updateData.cast = input.cast;
+    if (input.duration !== undefined) updateData.duration = input.duration;
+
     const updatedMedia = await db
       .update(media)
-      .set(input)
+      .set(updateData)
       .where(eq(media.id, id))
       .returning();
 
@@ -458,6 +474,9 @@ export class MediaDao {
           description: input.description,
           thumbnailUrl: input.thumbnailUrl,
           pageUrl: input.pageUrl,
+          dateAdded: input.dateAdded ? new Date(input.dateAdded) : null,
+          cast: input.cast || null,
+          duration: input.duration || null,
         })
         .where(eq(media.id, mediaId))
         .returning();
