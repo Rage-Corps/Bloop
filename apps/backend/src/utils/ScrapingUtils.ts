@@ -130,7 +130,7 @@ export class ScrapingUtils {
       const mediaCategories = this.getMediaLinkCategories($);
 
       if (mediaCategories.length > 0) {
-        console.log(`Categories: ${mediaCategories.join(', ')}`);
+        console.log(`Categories1: ${mediaCategories.join(', ')}`);
       } else {
         console.log('No categories found');
       }
@@ -219,7 +219,7 @@ export class ScrapingUtils {
               baseUrl: this.baseUrl,
               pageLinks,
               forceMode,
-                    status: 'pending',
+              status: 'pending',
               createdAt: new Date().toISOString(),
             },
             {

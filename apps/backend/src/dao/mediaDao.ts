@@ -81,11 +81,11 @@ export class MediaDao {
         .from(categories)
         .where(inArray(categories.category, filterCategories))
         .groupBy(categories.mediaId)
-        .having(sql`COUNT(DISTINCT ${categories.category}) = ${filterCategories.length}`);
-      
-      whereConditions.push(
-        sql`${media.id} IN ${categoriesSubquery}`
-      );
+        .having(
+          sql`COUNT(DISTINCT ${categories.category}) = ${filterCategories.length}`
+        );
+
+      whereConditions.push(sql`${media.id} IN ${categoriesSubquery}`);
     }
 
     // For sources: media must have ALL specified sources
@@ -96,11 +96,11 @@ export class MediaDao {
         .from(sources)
         .where(inArray(sources.sourceName, filterSources))
         .groupBy(sources.mediaId)
-        .having(sql`COUNT(DISTINCT ${sources.sourceName}) = ${filterSources.length}`);
-      
-      whereConditions.push(
-        sql`${media.id} IN ${sourcesSubquery}`
-      );
+        .having(
+          sql`COUNT(DISTINCT ${sources.sourceName}) = ${filterSources.length}`
+        );
+
+      whereConditions.push(sql`${media.id} IN ${sourcesSubquery}`);
     }
 
     // Apply name filter if provided
@@ -115,10 +115,8 @@ export class MediaDao {
         .select({ mediaId: categories.mediaId })
         .from(categories)
         .where(inArray(categories.category, excludedCategories));
-      
-      whereConditions.push(
-        sql`${media.id} NOT IN ${excludedMediaSubquery}`
-      );
+
+      whereConditions.push(sql`${media.id} NOT IN ${excludedMediaSubquery}`);
     }
 
     // Apply all where conditions together (AND logic)
@@ -130,7 +128,7 @@ export class MediaDao {
     const sqlQuery = mediaIdsQuery.toSQL();
     console.log('SQL Query:', sqlQuery.sql);
     console.log('SQL Params:', sqlQuery.params);
-    
+
     // Get filtered media IDs
     const filteredMediaIds = await mediaIdsQuery;
     const mediaIds = filteredMediaIds.map((item) => item.id);
@@ -437,7 +435,9 @@ export class MediaDao {
         .where(inArray(media.pageUrl, validPageLinks));
 
       const existingLinks = existingMedia.map((item) => item.pageUrl);
-      const newLinks = validPageLinks.filter((link) => !existingLinks.includes(link));
+      const newLinks = validPageLinks.filter(
+        (link) => !existingLinks.includes(link)
+      );
 
       return {
         existingCount: existingLinks.length,
