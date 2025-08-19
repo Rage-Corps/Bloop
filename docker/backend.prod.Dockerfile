@@ -12,6 +12,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # Copy package.json files for workspace packages
 COPY apps/backend/package.json ./apps/backend/package.json
 COPY packages/shared-types/package.json ./packages/shared-types/package.json
+COPY packages/database/package.json ./packages/database/package.json
 
 # Install dependencies (this will install for the entire workspace)
 RUN pnpm install 
@@ -19,6 +20,10 @@ RUN pnpm install
 # Copy shared-types source and build it
 COPY packages/shared-types ./packages/shared-types
 RUN cd packages/shared-types && pnpm build
+
+# Copy database package source and build it
+COPY packages/database ./packages/database
+RUN cd packages/database && pnpm build
 
 # Copy backend source code
 COPY apps/backend ./apps/backend

@@ -1,5 +1,5 @@
-import { db } from '../db/connection';
-import { categories } from '../db/schema';
+import { db } from '../connection';
+import { categories } from '../schema';
 
 export class CategoryDao {
   async getUniqueCategories(): Promise<string[]> {

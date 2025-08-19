@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { SourceDao } from '../dao/sourceDao';
+import { SourceDao } from '@bloop/database';
 
 const sourceDao = new SourceDao();
 

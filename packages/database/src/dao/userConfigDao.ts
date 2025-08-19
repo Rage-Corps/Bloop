@@ -1,5 +1,5 @@
-import { db } from '../db/connection';
-import { userConfig } from '../db/schema';
+import { db } from '../connection';
+import { userConfig } from '../schema';
 import { eq } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 

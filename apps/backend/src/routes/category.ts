@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { CategoryDao } from '../dao/categoryDao';
+import { CategoryDao } from '@bloop/database';
 
 const categoryDao = new CategoryDao();
 

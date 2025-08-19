@@ -2,7 +2,7 @@ import { Queue, Worker, Job } from 'bullmq';
 import IORedis from 'ioredis';
 import { ScrapingUtils } from '../utils/ScrapingUtils';
 import { ScrapingJobData, JobResult } from '../types/queue';
-import { MediaDao } from '../dao/mediaDao';
+import { MediaDao } from '@bloop/database';
 
 const connectionConfig = {
   host: 'redis',

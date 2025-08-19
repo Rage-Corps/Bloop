@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
-import { db } from '../db/connection';
-import { settings } from '../db/schema';
+import { db } from '../connection';
+import { settings } from '../schema';
 
 export interface SettingInput {
   key: string;

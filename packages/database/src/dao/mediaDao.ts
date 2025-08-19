@@ -1,5 +1,5 @@
-import { db } from '../db/connection';
-import { media, sources, categories } from '../db/schema';
+import { db } from '../connection';
+import { media, sources, categories } from '../schema';
 import { eq, and, inArray, ilike, sql } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import type { MediaListResponse, MediaQuery } from '@bloop/shared-types';

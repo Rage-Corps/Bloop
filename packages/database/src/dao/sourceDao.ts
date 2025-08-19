@@ -1,5 +1,5 @@
-import { db } from '../db/connection';
-import { sources } from '../db/schema';
+import { db } from '../connection';
+import { sources } from '../schema';
 
 export class SourceDao {
   async getUniqueSources(): Promise<string[]> {

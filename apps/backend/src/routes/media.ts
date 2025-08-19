@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { MediaDao } from '../dao/mediaDao';
+import { MediaDao } from '@bloop/database';
 import type { MediaQuery } from '@bloop/shared-types';
 
 const mediaDao = new MediaDao();

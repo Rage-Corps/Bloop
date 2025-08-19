@@ -1,5 +1,5 @@
 import * as cron from 'node-cron';
-import { SettingsDao } from '../dao/settingsDao';
+import { SettingsDao } from '@bloop/database';
 import { ScrapingUtils } from '../utils/ScrapingUtils';
 import { scrapingQueue } from '../jobs/queue';
 

@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { UserConfigDao, UserPreferences } from '../dao/userConfigDao';
+import { UserConfigDao, UserPreferences } from '@bloop/database';
 import { auth } from '../auth';
 
 const userConfigDao = new UserConfigDao();
