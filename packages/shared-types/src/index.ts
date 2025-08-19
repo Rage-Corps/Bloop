@@ -6,6 +6,9 @@ export interface Media {
   thumbnailUrl: string;
   pageUrl: string;
   createdAt: string | null; // Always string in API responses
+  dateAdded?: string | null;
+  cast?: string | null;
+  duration?: string | null;
 }
 
 // Source type from database schema
@@ -55,6 +58,9 @@ export interface CreateMediaInput {
   description: string;
   thumbnailUrl: string;
   pageUrl: string;
+  dateAdded?: string;
+  cast?: string;
+  duration?: string;
   sources?: Array<{
     sourceName: string;
     url: string;
@@ -68,6 +74,9 @@ export interface UpdateMediaInput {
   description?: string;
   thumbnailUrl?: string;
   pageUrl?: string;
+  dateAdded?: string;
+  cast?: string;
+  duration?: string;
 }
 
 // Auth types (from better-auth)

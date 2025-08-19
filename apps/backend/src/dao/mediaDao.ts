@@ -9,6 +9,9 @@ export interface CreateMediaInput {
   description: string;
   thumbnailUrl: string;
   pageUrl: string;
+  dateAdded?: string | undefined;
+  cast?: string | undefined;
+  duration?: string | undefined;
   sources?: Array<{
     sourceName: string;
     url: string;
@@ -21,6 +24,9 @@ export interface UpdateMediaInput {
   description?: string;
   thumbnailUrl?: string;
   pageUrl?: string;
+  dateAdded?: string;
+  cast?: string;
+  duration?: string;
 }
 
 export interface MediaWithDetails {
@@ -30,6 +36,9 @@ export interface MediaWithDetails {
   thumbnailUrl: string;
   pageUrl: string;
   createdAt: Date | null;
+  dateAdded: Date | null;
+  cast: string | null;
+  duration: string | null;
   sources: Array<{
     id: string;
     sourceName: string;
