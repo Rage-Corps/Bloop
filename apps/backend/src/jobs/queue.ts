@@ -122,6 +122,7 @@ async function processAndSaveMedia(
       pageUrl: link,
       sources: validSources,
       categories: validCategories,
+      dateAdded: media.dateAdded,
     });
 
     console.log(`💾 Upserted media: ${savedMedia.name} (ID: ${savedMedia.id})`);

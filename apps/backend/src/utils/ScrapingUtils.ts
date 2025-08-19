@@ -2,6 +2,7 @@ import { Queue } from 'bullmq';
 import * as cheerio from 'cheerio';
 import { randomUUID } from 'crypto';
 import { ScrapingJobData } from '../types/queue';
+import { parse } from 'date-fns';
 
 const DEFAULT_HEADERS = {
   'User-Agent':
@@ -157,6 +158,7 @@ export class ScrapingUtils {
         thumbnailUrl: thumbnailNameResult?.thumbnailUrl,
         sources: mediaSources,
         categories: mediaCategories,
+        dateAdded: mediaInfo.dateAdded,
       };
 
       return media;
@@ -252,18 +254,25 @@ export class ScrapingUtils {
     return { thumbnailUrl, name };
   }
 
-  private getMediaLinkInfo(
-    $: cheerio.CheerioAPI
-  ): { description: string } | null {
+  private getMediaLinkInfo($: cheerio.CheerioAPI): {
+    description: string | null;
+    dateAdded: Date | null;
+  } {
     const descriptionDiv = $('div.the_description');
     const firstParagraph = descriptionDiv.find('p').first();
     const description = firstParagraph.text().trim();
 
-    if (!description) {
-      return null;
-    }
+    const dateAddedElement = $('.about-content .data-row');
+    const rawAddedOnDate = dateAddedElement
+      .first()
+      .text()
+      .replace('Added on:', '')
+      .trim();
+    const dateAdded = rawAddedOnDate
+      ? parse(rawAddedOnDate, 'MMMM do, yyyy', new Date())
+      : null;
 
-    return { description };
+    return { description: description ?? null, dateAdded };
   }
 
   private getMediaSources(
