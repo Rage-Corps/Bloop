@@ -1,0 +1,33 @@
+// Temporal Worker Types
+
+export interface TestWorkflowInput {
+  message: string;
+  userId?: string;
+}
+
+export interface TestWorkflowResult {
+  success: boolean;
+  message: string;
+  mediaCount?: number;
+  timestamp: string;
+}
+
+export interface DatabaseTestResult {
+  mediaCount: number;
+  categoriesCount: number;
+  sourcesCount: number;
+}
+
+export interface MediaProcessingInput {
+  mediaId: string;
+  action: 'create' | 'update' | 'delete';
+  data?: any;
+}
+
+export interface MediaProcessingResult {
+  success: boolean;
+  mediaId: string;
+  action: string;
+  timestamp: string;
+  error?: string;
+}
