@@ -6,7 +6,10 @@ export const media = pgTable('media', {
   description: text('description').notNull(),
   thumbnailUrl: text('thumbnail_url').notNull(),
   pageUrl: text('page_url').notNull().unique(),
-  createdAt: timestamp('created_at').defaultNow()
+  createdAt: timestamp('created_at').defaultNow(),
+  dateAdded: timestamp('date_added'),
+  cast: text('cast'),
+  duration: text('duration')
 })
 
 export const sources = pgTable('sources', {
