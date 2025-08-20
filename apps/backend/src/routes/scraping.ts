@@ -172,6 +172,7 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
           type: 'object',
           properties: {
             maxPages: { type: 'number', minimum: 1 },
+            batchSize: { type: 'number', minimum: 1, maximum: 50, default: 5 },
             force: { type: 'boolean', default: false },
           },
         },
@@ -197,9 +198,11 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       const {
         maxPages,
+        batchSize = 5,
         force = false,
       } = request.body as {
         maxPages?: number;
+        batchSize?: number;
         force?: boolean;
       };
 
@@ -232,6 +235,7 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
 
         const input = {
           maxPages,
+          batchSize,
           force,
           baseUrl,
         };

@@ -88,3 +88,37 @@ export function extractLinksFromHTML(html: string): string[] {
 
   return links;
 }
+
+export async function fetchAndExtractLinks(
+  pageUrl: string,
+  baseUrl: string
+): Promise<string[]> {
+  const html = await fetchPageHTML(pageUrl);
+  const links = extractLinksFromHTML(html);
+  return filterMediaLinks(links, baseUrl);
+}
+
+function filterMediaLinks(links: string[], baseScrapUrl: string) {
+  const baseUrl = new URL(baseScrapUrl).origin;
+  const uniqueLinks = new Set<string>();
+  const excludePaths = ['/contact-us', '/legal-notice', '/page', '/category'];
+
+  for (const link of links) {
+    if (link.startsWith(baseUrl)) {
+      // Exclude base URL and base URL with trailing slash
+      if (link === baseUrl || link === `${baseUrl}/`) {
+        continue;
+      }
+
+      const shouldExclude = excludePaths.some((path) =>
+        link.includes(`${baseUrl}${path}`)
+      );
+
+      if (!shouldExclude) {
+        uniqueLinks.add(link);
+      }
+    }
+  }
+
+  return Array.from(uniqueLinks);
+}

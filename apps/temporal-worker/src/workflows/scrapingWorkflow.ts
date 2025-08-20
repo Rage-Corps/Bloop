@@ -52,8 +52,9 @@ export async function scrapingWorkflow(input: ScrapingWorkflowInput) {
         );
 
         // Start all workflows in current batch
-        const batchWorkflows = batch.map((page) =>
+        const batchWorkflows = batch.map((page, index) =>
           startChild(pageScrapeWorkflow, {
+            workflowId: `scrape-page-${index + 1}`,
             args: [
               {
                 pageUrl: page,
@@ -91,7 +92,7 @@ export async function scrapingWorkflow(input: ScrapingWorkflowInput) {
       batchProcessing: input.force
         ? {
             totalPages: (input.maxPages ?? maxPages) - 1,
-            batchSize: 10,
+            batchSize: batchSize,
             successful: results.filter((r) => r.status === 'fulfilled').length,
             failed: results.filter((r) => r.status === 'rejected').length,
           }
