@@ -26,9 +26,6 @@ export async function fetchPageHTML(url: string): Promise<string> {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    console.log(
-      `✅ Successfully fetched HTML from ${url} (${response.data.length} characters)`
-    );
     return response.data;
   } catch (error) {
     console.error(`❌ Failed to fetch HTML from ${url}:`, error);
@@ -98,7 +95,7 @@ export async function fetchAndExtractLinks(
   return filterMediaLinks(links, baseUrl);
 }
 
-function filterMediaLinks(links: string[], baseScrapUrl: string) {
+export function filterMediaLinks(links: string[], baseScrapUrl: string) {
   const baseUrl = new URL(baseScrapUrl).origin;
   const uniqueLinks = new Set<string>();
   const excludePaths = ['/contact-us', '/legal-notice', '/page', '/category'];

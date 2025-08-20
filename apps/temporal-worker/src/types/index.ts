@@ -43,3 +43,8 @@ export interface PageScrapingWorkflowInput {
   force: boolean;
   baseUrl: string;
 }
+export interface MediaScrapingWorkflowInput {
+  mediaUrl: string;
+  force: boolean;
+  baseUrl: string;
+}
