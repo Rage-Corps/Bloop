@@ -1,5 +1,6 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { parse } from 'date-fns';
 
 const DEFAULT_HEADERS = {
   'User-Agent':
@@ -118,4 +119,125 @@ export function filterMediaLinks(links: string[], baseScrapUrl: string) {
   }
 
   return Array.from(uniqueLinks);
+}
+
+export async function processLink(link: string) {
+  const html = await fetchPageHTML(link);
+
+  const $ = cheerio.load(html);
+  const thumbnailNameResult = getMediaLinkThumbnailAndName($);
+
+  if (thumbnailNameResult) {
+    const { thumbnailUrl, name } = thumbnailNameResult;
+    console.log(`Thumbnail URL: ${thumbnailUrl}`);
+    console.log(`Name: ${name}`);
+  } else {
+    console.log('No thumbnail found with class "rmbd"');
+  }
+
+  const mediaInfo = getMediaLinkInfo($);
+
+  const mediaCategories = getMediaLinkCategories($);
+
+  if (mediaCategories.length > 0) {
+    console.log(`Categories1: ${mediaCategories.join(', ')}`);
+  } else {
+    console.log('No categories found');
+  }
+
+  if (mediaInfo) {
+    console.log(`Description: ${mediaInfo.description}`);
+  } else {
+    console.log('No description found');
+  }
+
+  const mediaSources = getMediaSources($);
+
+  if (mediaSources.length > 0) {
+    console.log(`Found ${mediaSources.length} media sources:`);
+    mediaSources.forEach((source, index) => {
+      console.log(`${index + 1}. ${source.source}: ${source.url}`);
+    });
+  } else {
+    console.log('No media sources found');
+  }
+
+  const media = {
+    name: thumbnailNameResult?.name,
+    description: mediaInfo?.description,
+    thumbnailUrl: thumbnailNameResult?.thumbnailUrl,
+    sources: mediaSources,
+    categories: mediaCategories,
+    dateAdded: mediaInfo.dateAdded,
+  };
+
+  return media;
+}
+
+function getMediaLinkThumbnailAndName(
+  $: cheerio.CheerioAPI
+): { thumbnailUrl: string; name: string } | null {
+  const thumbnailImg = $('img.rmbd, noscript img.rmbd').first();
+  const thumbnailUrl = thumbnailImg.attr('data-src');
+  const altText = thumbnailImg.attr('alt');
+
+  if (!thumbnailUrl) {
+    return null;
+  }
+
+  const name = altText ? decodeURIComponent(altText) : '';
+
+  return { thumbnailUrl, name };
+}
+
+function getMediaLinkInfo($: cheerio.CheerioAPI): {
+  description: string | null;
+  dateAdded: Date | null;
+} {
+  const descriptionDiv = $('div.the_description');
+  const firstParagraph = descriptionDiv.find('p').first();
+  const description = firstParagraph.text().trim();
+
+  const dateAddedElement = $('.about-content .data-row');
+  const rawAddedOnDate = dateAddedElement
+    .first()
+    .text()
+    .replace('Added on:', '')
+    .trim();
+  const dateAdded = rawAddedOnDate
+    ? parse(rawAddedOnDate, 'MMMM do, yyyy', new Date())
+    : null;
+
+  return { description: description ?? null, dateAdded };
+}
+
+function getMediaSources(
+  $: cheerio.CheerioAPI
+): { source: string; url: string }[] {
+  const linkTabs = $('#link-tabs');
+  const sources: { source: string; url: string }[] = [];
+
+  linkTabs.find('li a').each((_index, element) => {
+    const source = $(element).text().trim();
+    const url = $(element).attr('href');
+
+    if (source && url) {
+      sources.push({ source, url });
+    }
+  });
+
+  return sources;
+}
+
+function getMediaLinkCategories($: cheerio.CheerioAPI): string[] {
+  const categories: string[] = [];
+
+  $('a[rel="category"]').each((_index, element) => {
+    const categoryText = $(element).text().trim();
+    if (categoryText) {
+      categories.push(categoryText);
+    }
+  });
+
+  return categories;
 }

@@ -240,11 +240,13 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
           baseUrl,
         };
 
-        // Start the workflow asynchronously
+        // Start the workflow asynchronously with generous timeouts
         await client.workflow.start('scrapingWorkflow', {
           args: [input],
           taskQueue,
           workflowId,
+          workflowExecutionTimeout: '2h', // 2 hours max for entire scraping process
+          workflowRunTimeout: '2h', // 2 hours max per run
         });
 
         fastify.log.info(`🚀 Started scraping workflow with ID: ${workflowId}`);

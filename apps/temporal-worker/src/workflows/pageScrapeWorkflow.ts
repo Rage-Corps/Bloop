@@ -1,4 +1,8 @@
-import { proxyActivities, startChild } from '@temporalio/workflow';
+import {
+  proxyActivities,
+  startChild,
+  ParentClosePolicy,
+} from '@temporalio/workflow';
 import type * as scrapingActivities from '../activities/scraping';
 import { PageScrapingWorkflowInput } from '../types';
 import { mediaScrapeWorkflow } from './mediaScrapeWorkflow';
@@ -12,7 +16,7 @@ export async function pageScrapeWorkflow(input: PageScrapingWorkflowInput) {
   try {
     const { pageUrl, baseUrl, force } = input;
     console.log(`🕷️ Starting page scrape for: ${pageUrl}`);
-    
+
     const mediaLinks = await fetchAndExtractLinks(input.pageUrl, input.baseUrl);
     console.log(`🔗 Found ${mediaLinks.length} media links on page`);
 
@@ -34,7 +38,10 @@ export async function pageScrapeWorkflow(input: PageScrapingWorkflowInput) {
     // Start all media scraping workflows
     const mediaWorkflows = mediaLinks.map((link, index) =>
       startChild(mediaScrapeWorkflow, {
-        workflowId: `media-scrape-page-${pageUrl.slice(pageUrl.length - 1)}-link-${index}`,
+        workflowId: `media-scrape-${Date.now()}-${index}`,
+        parentClosePolicy: ParentClosePolicy.TERMINATE, // Terminate children when parent completes
+        workflowExecutionTimeout: '5m', // 5 minutes max per media item
+        workflowRunTimeout: '4m', // 4 minutes max per run
         args: [
           {
             mediaUrl: link,
@@ -49,12 +56,23 @@ export async function pageScrapeWorkflow(input: PageScrapingWorkflowInput) {
 
     // Wait for all media workflows to complete
     const results = await Promise.allSettled(mediaWorkflows);
-    
+
     // Analyze results
-    const successful = results.filter(r => r.status === 'fulfilled').length;
-    const failed = results.filter(r => r.status === 'rejected').length;
-    
-    console.log(`📊 Media scraping completed: ${successful} successful, ${failed} failed`);
+    const successful = results.filter((r) => r.status === 'fulfilled').length;
+    const failed = results.filter((r) => r.status === 'rejected').length;
+
+    console.log(
+      `📊 Media scraping completed: ${successful} successful, ${failed} failed`
+    );
+
+    // Log failed media workflow details for debugging
+    results.forEach((result, idx) => {
+      if (result.status === 'rejected') {
+        console.error(
+          `❌ Media workflow failed for ${mediaLinks[idx]}: ${result.reason}`
+        );
+      }
+    });
 
     return {
       success: true,

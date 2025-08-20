@@ -1,4 +1,4 @@
-import { proxyActivities, startChild } from '@temporalio/workflow';
+import { proxyActivities, startChild, ParentClosePolicy } from '@temporalio/workflow';
 import { ScrapingWorkflowInput } from '../types';
 
 // Import activities with proper typing
@@ -54,7 +54,10 @@ export async function scrapingWorkflow(input: ScrapingWorkflowInput) {
         // Start all workflows in current batch
         const batchWorkflows = batch.map((page, index) =>
           startChild(pageScrapeWorkflow, {
-            workflowId: `scrape-page-${index + 1}`,
+            workflowId: `scrape-page-${Date.now()}-${index + 1}`,
+            parentClosePolicy: ParentClosePolicy.TERMINATE, // Terminate children when parent completes
+            workflowExecutionTimeout: '10m', // 10 minutes max per page
+            workflowRunTimeout: '8m', // 8 minutes max per run
             args: [
               {
                 pageUrl: page,
@@ -69,15 +72,27 @@ export async function scrapingWorkflow(input: ScrapingWorkflowInput) {
         const batchResults = await Promise.allSettled(batchWorkflows);
         results.push(...batchResults);
 
-        console.log(`✅ Batch ${Math.floor(i / batchSize) + 1} completed`);
+        // Log batch-specific results
+        const batchSuccessful = batchResults.filter(r => r.status === 'fulfilled').length;
+        const batchFailed = batchResults.filter(r => r.status === 'rejected').length;
+        
+        console.log(`✅ Batch ${Math.floor(i / batchSize) + 1} completed: ${batchSuccessful} successful, ${batchFailed} failed`);
+        
+        // Log failed workflow details for debugging
+        batchResults.forEach((result, idx) => {
+          if (result.status === 'rejected') {
+            console.error(`❌ Page workflow failed for ${batch[idx]}: ${result.reason}`);
+          }
+        });
       }
 
       // Log batch results summary
       const successful = results.filter((r) => r.status === 'fulfilled').length;
       const failed = results.filter((r) => r.status === 'rejected').length;
       console.log(
-        `📊 Batched processing completed: ${successful} successful, ${failed} failed`
+        `📊 All batched processing completed: ${successful} successful, ${failed} failed`
       );
+      console.log(`✅ Main scraping workflow waited for all ${results.length} child workflows to complete`);
     } else {
       for (let index = 1; index < (input.maxPages ?? maxPages); index++) {}
     }
