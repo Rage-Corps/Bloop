@@ -21,7 +21,9 @@
     "@temporalio/client": "^1.12.2",
     "@temporalio/common": "^1.12.2",
     "@temporalio/worker": "^1.12.2",
-    "@temporalio/workflow": "^1.12.2"
+    "@temporalio/workflow": "^1.12.2",
+    "axios": "^1.11.0",
+    "cheerio": "^1.1.2"
   },
   "devDependencies": {
     "@types/node": "^24.1.0",

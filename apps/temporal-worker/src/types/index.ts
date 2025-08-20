@@ -37,3 +37,8 @@ export interface ScrapingWorkflowInput {
   force: boolean;
   baseUrl: string;
 }
+export interface PageScrapingWorkflowInput {
+  pageUrl: string;
+  force: boolean;
+  baseUrl: string;
+}

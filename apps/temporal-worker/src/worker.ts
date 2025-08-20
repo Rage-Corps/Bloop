@@ -1,5 +1,6 @@
 import { NativeConnection, Worker } from '@temporalio/worker';
-import * as activities from './activities/example';
+
+import * as scrapingActivities from './activities/scraping';
 
 async function run() {
   // Get configuration from environment variables
@@ -27,7 +28,9 @@ async function run() {
       namespace,
       taskQueue,
       workflowsPath: require.resolve('./workflows'),
-      activities,
+      activities: {
+        ...scrapingActivities,
+      },
       maxConcurrentActivityTaskExecutions: 10,
       maxConcurrentWorkflowTaskExecutions: 10,
     });
