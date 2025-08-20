@@ -1,3 +1,4 @@
+import { CreateMediaInput } from '@bloop/database';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { parse } from 'date-fns';

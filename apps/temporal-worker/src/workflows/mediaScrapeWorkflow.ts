@@ -1,8 +1,13 @@
 import { proxyActivities } from '@temporalio/workflow';
 import type * as scrapingActivities from '../activities/scraping';
+import type * as dbActivities from '../activities/db';
 import { MediaScrapingWorkflowInput } from '../types';
 
 const { processLink } = proxyActivities<typeof scrapingActivities>({
+  startToCloseTimeout: '120s', // Allow more time for HTTP requests
+  heartbeatTimeout: '10s',
+});
+const { saveMedia } = proxyActivities<typeof dbActivities>({
   startToCloseTimeout: '120s', // Allow more time for HTTP requests
   heartbeatTimeout: '10s',
 });
@@ -12,7 +17,7 @@ export async function mediaScrapeWorkflow(input: MediaScrapingWorkflowInput) {
     const { mediaUrl } = input;
     const media = await processLink(mediaUrl);
 
-    console.log('Finished:', media.name);
+    await saveMedia({ pageUrl: mediaUrl, ...media });
     return {
       success: true,
     };

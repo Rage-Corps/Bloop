@@ -2,6 +2,8 @@ import { NativeConnection, Worker } from '@temporalio/worker';
 
 import * as scrapingActivities from './activities/scraping';
 
+import * as dbActivities from './activities/db';
+
 async function run() {
   // Get configuration from environment variables
   const temporalAddress = process.env.TEMPORAL_ADDRESS || 'localhost:7233';
@@ -30,6 +32,7 @@ async function run() {
       workflowsPath: require.resolve('./workflows'),
       activities: {
         ...scrapingActivities,
+        ...dbActivities,
       },
       maxConcurrentActivityTaskExecutions: 10,
       maxConcurrentWorkflowTaskExecutions: 10,
