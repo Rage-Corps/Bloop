@@ -31,3 +31,9 @@ export interface MediaProcessingResult {
   timestamp: string;
   error?: string;
 }
+
+export interface ScrapingWorkflowInput {
+  maxPages?: number | null;
+  force: boolean;
+  baseUrl: string;
+}

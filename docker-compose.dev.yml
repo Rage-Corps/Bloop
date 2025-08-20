@@ -49,6 +49,9 @@ services:
       - AUTH_URL=${AUTH_URL:-http://localhost:3001}
       - CRON_SERVICE_ENABLED=${CRON_SERVICE_ENABLED:-true}
       - CRON_SERVICE_FREQUENCY=${CRON_SERVICE_FREQUENCY}
+      - TEMPORAL_ADDRESS=${TEMPORAL_ADDRESS:-localhost:7233}
+      - TEMPORAL_NAMESPACE=${TEMPORAL_NAMESPACE:-default}
+      - TASK_QUEUE=${TASK_QUEUE:-bloop-tasks}
     networks:
       - dev-network
     depends_on:
@@ -74,13 +77,14 @@ services:
       - TEMPORAL_ADDRESS=${TEMPORAL_ADDRESS:-localhost:7233}
       - TEMPORAL_NAMESPACE=${TEMPORAL_NAMESPACE:-default}
       - TASK_QUEUE=${TASK_QUEUE:-bloop-tasks}
+      - BASE_SCRAPE_URL=${BASE_SCRAPE_URL}
     networks:
       - dev-network
     depends_on:
       - postgres
       - redis
     restart: unless-stopped
-    
+
   postgres:
     image: postgres:17-alpine
     ports:

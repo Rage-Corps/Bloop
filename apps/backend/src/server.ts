@@ -6,7 +6,6 @@ import categoryRoutes from './routes/category';
 import sourceRoutes from './routes/source';
 import settingsRoutes from './routes/settings';
 import userConfigRoutes from './routes/userConfig';
-import temporalRoutes from './routes/temporal';
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { FastifyAdapter } from '@bull-board/fastify';
@@ -132,7 +131,6 @@ const start = async () => {
   await fastify.register(sourceRoutes, { prefix: '/api' });
   await fastify.register(settingsRoutes, { prefix: '/api' });
   await fastify.register(userConfigRoutes, { prefix: '/api' });
-  await fastify.register(temporalRoutes, { prefix: '/api' });
 
   await initializeWorker();
 

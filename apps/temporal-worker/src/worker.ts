@@ -6,12 +6,12 @@ async function run() {
   const temporalAddress = process.env.TEMPORAL_ADDRESS || 'localhost:7233';
   const namespace = process.env.TEMPORAL_NAMESPACE || 'default';
   const taskQueue = process.env.TASK_QUEUE || 'bloop-tasks';
-  
+
   console.log('🔧 Temporal Worker Configuration:');
   console.log(`   Address: ${temporalAddress}`);
   console.log(`   Namespace: ${namespace}`);
   console.log(`   Task Queue: ${taskQueue}`);
-  
+
   try {
     // Create connection to Temporal service
     console.log('🔌 Connecting to Temporal service...');
@@ -26,7 +26,7 @@ async function run() {
       connection,
       namespace,
       taskQueue,
-      workflowsPath: require.resolve('./workflows/example'),
+      workflowsPath: require.resolve('./workflows'),
       activities,
       maxConcurrentActivityTaskExecutions: 10,
       maxConcurrentWorkflowTaskExecutions: 10,
@@ -47,7 +47,6 @@ async function run() {
     // Start the worker
     console.log('🚀 Starting Temporal worker...');
     await worker.run();
-    
   } catch (error) {
     console.error('❌ Worker failed to start:', error);
     process.exit(1);
