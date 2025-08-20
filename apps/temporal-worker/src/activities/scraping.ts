@@ -16,7 +16,7 @@ const DEFAULT_HEADERS = {
 export async function fetchPageHTML(url: string): Promise<string> {
   try {
     console.log(`🌐 Fetching HTML from: ${url}`);
-    
+
     const response = await axios.get(url, {
       headers: DEFAULT_HEADERS,
       timeout: 30000, // 30 second timeout
@@ -26,19 +26,27 @@ export async function fetchPageHTML(url: string): Promise<string> {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    console.log(`✅ Successfully fetched HTML from ${url} (${response.data.length} characters)`);
+    console.log(
+      `✅ Successfully fetched HTML from ${url} (${response.data.length} characters)`
+    );
     return response.data;
-    
   } catch (error) {
     console.error(`❌ Failed to fetch HTML from ${url}:`, error);
-    throw new Error(`Failed to fetch page: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to fetch page: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
-export async function getMaxPageIndex(html: string, baseScrapUrl: string): Promise<number> {
+export async function getMaxPageIndex(
+  html: string,
+  baseScrapUrl: string
+): Promise<number> {
   try {
-    console.log(`🔍 Analyzing HTML to find max page index for base URL: ${baseScrapUrl}`);
-    
+    console.log(
+      `🔍 Analyzing HTML to find max page index for base URL: ${baseScrapUrl}`
+    );
+
     const links = extractLinksFromHTML(html);
     console.log(`📋 Found ${links.length} links in HTML`);
 
@@ -59,14 +67,15 @@ export async function getMaxPageIndex(html: string, baseScrapUrl: string): Promi
 
     console.log(`📊 Max page index found: ${maxIndex}`);
     return maxIndex;
-    
   } catch (error) {
     console.error('❌ Failed to analyze max page index:', error);
-    throw new Error(`Failed to analyze HTML: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to analyze HTML: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
-function extractLinksFromHTML(html: string): string[] {
+export function extractLinksFromHTML(html: string): string[] {
   const $ = cheerio.load(html);
   const links: string[] = [];
 

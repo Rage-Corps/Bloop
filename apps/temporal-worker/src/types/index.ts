@@ -33,6 +33,7 @@ export interface MediaProcessingResult {
 }
 
 export interface ScrapingWorkflowInput {
+  batchSize?: number | null;
   maxPages?: number | null;
   force: boolean;
   baseUrl: string;
