@@ -39,7 +39,7 @@ export async function pageScrapeWorkflow(input: PageScrapingWorkflowInput) {
     const mediaWorkflows = mediaLinks.map((link, index) =>
       startChild(mediaScrapeWorkflow, {
         workflowId: `media-scrape-${Date.now()}-${index}`,
-        parentClosePolicy: ParentClosePolicy.TERMINATE, // Terminate children when parent completes
+        parentClosePolicy: ParentClosePolicy.ABANDON, // Let children complete independently
         workflowExecutionTimeout: '5m', // 5 minutes max per media item
         workflowRunTimeout: '4m', // 4 minutes max per run
         args: [

@@ -55,7 +55,7 @@ export async function scrapingWorkflow(input: ScrapingWorkflowInput) {
         const batchWorkflows = batch.map((page, index) =>
           startChild(pageScrapeWorkflow, {
             workflowId: `scrape-page-${Date.now()}-${index + 1}`,
-            parentClosePolicy: ParentClosePolicy.TERMINATE, // Terminate children when parent completes
+            parentClosePolicy: ParentClosePolicy.ABANDON, // Let children complete independently
             workflowExecutionTimeout: '10m', // 10 minutes max per page
             workflowRunTimeout: '8m', // 8 minutes max per run
             args: [

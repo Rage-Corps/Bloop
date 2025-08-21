@@ -1,7 +1,7 @@
 import { CreateMediaInput } from '@bloop/database';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import { parse } from 'date-fns';
+import { isValid, parse } from 'date-fns';
 
 const DEFAULT_HEADERS = {
   'User-Agent':
@@ -206,7 +206,10 @@ function getMediaLinkInfo($: cheerio.CheerioAPI): {
     .replace('Added on:', '')
     .trim();
   const dateAdded = rawAddedOnDate
-    ? parse(rawAddedOnDate, 'MMMM do, yyyy', new Date())
+    ? (() => {
+        const parsed = parse(rawAddedOnDate, 'MMMM do, yyyy', new Date());
+        return isValid(parsed) ? parsed : null;
+      })()
     : null;
 
   return { description: description ?? null, dateAdded };

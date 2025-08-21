@@ -75,7 +75,7 @@ export async function mediaScrapeWorkflow(input: MediaScrapingWorkflowInput) {
 
     // Validate media object
     const validation = validateMediaObject(media, mediaUrl);
-    
+
     if (!validation.isValid) {
       const errorMsg = `Missing required fields: ${validation.missingFields.join(', ')}`;
       console.error(`❌ Invalid media object for ${mediaUrl} - ${errorMsg}`);
@@ -93,8 +93,14 @@ export async function mediaScrapeWorkflow(input: MediaScrapingWorkflowInput) {
     }
 
     // Process and validate sources and categories
-    const validSources = processMediaSources(media.sources, media.name || 'Unknown');
-    const validCategories = processMediaCategories(media.categories, media.name || 'Unknown');
+    const validSources = processMediaSources(
+      media.sources,
+      media.name || 'Unknown'
+    );
+    const validCategories = processMediaCategories(
+      media.categories,
+      media.name || 'Unknown'
+    );
 
     // Save media with validated data
     await saveMedia({
@@ -104,7 +110,10 @@ export async function mediaScrapeWorkflow(input: MediaScrapingWorkflowInput) {
       pageUrl: mediaUrl,
       sources: validSources,
       categories: validCategories,
-      dateAdded: media.dateAdded?.toISOString(),
+      dateAdded:
+        media.dateAdded instanceof Date
+          ? media.dateAdded.toISOString()
+          : (media.dateAdded ?? new Date().toISOString()),
     });
 
     return {
