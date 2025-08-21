@@ -31,6 +31,10 @@ COPY apps/temporal-worker ./apps/temporal-worker
 # Build temporal worker
 RUN cd apps/temporal-worker && pnpm build
 
+# Debug: List contents to see what was actually built
+RUN ls -la /app/apps/temporal-worker/
+RUN ls -la /app/apps/temporal-worker/dist/ || echo "No dist directory found"
+
 # Set working directory to temporal worker for running the app
 WORKDIR /app/apps/temporal-worker
 
