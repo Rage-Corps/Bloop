@@ -35,44 +35,52 @@ export async function pageScrapeWorkflow(input: PageScrapingWorkflowInput) {
       };
     }
 
-    // Start all media scraping workflows
-    const mediaWorkflows = mediaLinks.map((link, index) =>
-      startChild(mediaScrapeWorkflow, {
-        workflowId: `media-scrape-${Date.now()}-${index}`,
-        parentClosePolicy: ParentClosePolicy.ABANDON, // Let children complete independently
-        workflowExecutionTimeout: '5m', // 5 minutes max per media item
-        workflowRunTimeout: '4m', // 4 minutes max per run
-        args: [
-          {
-            mediaUrl: link,
-            force,
-            baseUrl,
-          },
-        ],
-      })
+    // Process media scraping workflows sequentially
+    console.log(
+      `🚀 Starting ${mediaLinks.length} media scraping workflows sequentially`
     );
 
-    console.log(`🚀 Started ${mediaWorkflows.length} media scraping workflows`);
+    let successful = 0;
+    let failed = 0;
+    const errors: string[] = [];
 
-    // Wait for all media workflows to complete
-    const results = await Promise.allSettled(mediaWorkflows);
+    for (let index = 0; index < mediaLinks.length; index++) {
+      const link = mediaLinks[index];
+      console.log(
+        `🔄 Processing media ${index + 1}/${mediaLinks.length}: ${link}`
+      );
 
-    // Analyze results
-    const successful = results.filter((r) => r.status === 'fulfilled').length;
-    const failed = results.filter((r) => r.status === 'rejected').length;
+      try {
+        const child = await startChild(mediaScrapeWorkflow, {
+          workflowId: `media-scrape-${Date.now()}-${index}`,
+          parentClosePolicy: ParentClosePolicy.TERMINATE, // Let children complete independently
+          workflowExecutionTimeout: '5m', // 5 minutes max per media item
+          workflowRunTimeout: '4m', // 4 minutes max per run
+          args: [
+            {
+              mediaUrl: link,
+              force,
+              baseUrl,
+            },
+          ],
+        });
+
+        await child.result();
+
+        successful++;
+        console.log(`✅ Media workflow completed for: ${link}`);
+      } catch (error) {
+        failed++;
+        const errorMsg =
+          error instanceof Error ? error.message : 'Unknown error';
+        errors.push(`${link}: ${errorMsg}`);
+        console.error(`❌ Media workflow failed for ${link}: ${errorMsg}`);
+      }
+    }
 
     console.log(
-      `📊 Media scraping completed: ${successful} successful, ${failed} failed`
+      `📊 Media scraping completed sequentially: ${successful} successful, ${failed} failed`
     );
-
-    // Log failed media workflow details for debugging
-    results.forEach((result, idx) => {
-      if (result.status === 'rejected') {
-        console.error(
-          `❌ Media workflow failed for ${mediaLinks[idx]}: ${result.reason}`
-        );
-      }
-    });
 
     return {
       success: true,

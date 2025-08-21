@@ -1,4 +1,8 @@
-import { proxyActivities, startChild, ParentClosePolicy } from '@temporalio/workflow';
+import {
+  proxyActivities,
+  startChild,
+  ParentClosePolicy,
+} from '@temporalio/workflow';
 import { ScrapingWorkflowInput } from '../types';
 
 // Import activities with proper typing
@@ -55,7 +59,7 @@ export async function scrapingWorkflow(input: ScrapingWorkflowInput) {
         const batchWorkflows = batch.map((page, index) =>
           startChild(pageScrapeWorkflow, {
             workflowId: `scrape-page-${Date.now()}-${index + 1}`,
-            parentClosePolicy: ParentClosePolicy.ABANDON, // Let children complete independently
+            parentClosePolicy: ParentClosePolicy.TERMINATE, // Let children complete independently
             workflowExecutionTimeout: '10m', // 10 minutes max per page
             workflowRunTimeout: '8m', // 8 minutes max per run
             args: [
@@ -69,19 +73,29 @@ export async function scrapingWorkflow(input: ScrapingWorkflowInput) {
         );
 
         // Wait for current batch to complete before starting next batch
-        const batchResults = await Promise.allSettled(batchWorkflows);
+        const batchResults = await Promise.allSettled(
+          batchWorkflows.map(async (bat) => (await bat).result())
+        );
         results.push(...batchResults);
 
         // Log batch-specific results
-        const batchSuccessful = batchResults.filter(r => r.status === 'fulfilled').length;
-        const batchFailed = batchResults.filter(r => r.status === 'rejected').length;
-        
-        console.log(`✅ Batch ${Math.floor(i / batchSize) + 1} completed: ${batchSuccessful} successful, ${batchFailed} failed`);
-        
+        const batchSuccessful = batchResults.filter(
+          (r) => r.status === 'fulfilled'
+        ).length;
+        const batchFailed = batchResults.filter(
+          (r) => r.status === 'rejected'
+        ).length;
+
+        console.log(
+          `✅ Batch ${Math.floor(i / batchSize) + 1} completed: ${batchSuccessful} successful, ${batchFailed} failed`
+        );
+
         // Log failed workflow details for debugging
         batchResults.forEach((result, idx) => {
           if (result.status === 'rejected') {
-            console.error(`❌ Page workflow failed for ${batch[idx]}: ${result.reason}`);
+            console.error(
+              `❌ Page workflow failed for ${batch[idx]}: ${result.reason}`
+            );
           }
         });
       }
@@ -92,7 +106,9 @@ export async function scrapingWorkflow(input: ScrapingWorkflowInput) {
       console.log(
         `📊 All batched processing completed: ${successful} successful, ${failed} failed`
       );
-      console.log(`✅ Main scraping workflow waited for all ${results.length} child workflows to complete`);
+      console.log(
+        `✅ Main scraping workflow waited for all ${results.length} child workflows to complete`
+      );
     } else {
       for (let index = 1; index < (input.maxPages ?? maxPages); index++) {}
     }

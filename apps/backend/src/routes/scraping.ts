@@ -36,10 +36,7 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const {
-        maxPages,
-        forceMode = false,
-      } = request.body as {
+      const { maxPages, forceMode = false } = request.body as {
         maxPages?: number;
         forceMode?: boolean;
       };
@@ -208,7 +205,8 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
 
       try {
         // Get Temporal client
-        const temporalAddress = process.env.TEMPORAL_ADDRESS || 'localhost:7233';
+        const temporalAddress =
+          process.env.TEMPORAL_ADDRESS || 'localhost:7233';
         const namespace = process.env.TEMPORAL_NAMESPACE || 'default';
         const taskQueue = process.env.TASK_QUEUE || 'bloop-tasks';
 
@@ -224,7 +222,7 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
         const workflowId = `scraping-workflow-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
         const baseUrl = process.env.BASE_SCRAPE_URL;
-        
+
         if (!baseUrl) {
           reply.code(400);
           return {
@@ -257,13 +255,292 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
           message: 'Scraping workflow started successfully',
           status: 'running',
         };
-
       } catch (error) {
         fastify.log.error('Error starting scraping workflow:', error);
         reply.code(500);
         return {
           error: error instanceof Error ? error.message : 'Unknown error',
           message: 'Failed to start scraping workflow',
+        };
+      }
+    }
+  );
+
+  // Get running workflows
+  fastify.get(
+    '/scraping/workflows',
+    {
+      schema: {
+        description: 'List all running scraping workflows',
+        tags: ['scraping'],
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              workflows: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    workflowId: { type: 'string' },
+                    status: { type: 'string' },
+                    type: { type: 'string' },
+                    startTime: { type: 'string' },
+                    taskQueue: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (_request, reply) => {
+      try {
+        const temporalAddress =
+          process.env.TEMPORAL_ADDRESS || 'localhost:7233';
+        const namespace = process.env.TEMPORAL_NAMESPACE || 'default';
+
+        const connection = await Connection.connect({
+          address: temporalAddress,
+        });
+
+        const client = new Client({
+          connection,
+          namespace,
+        });
+
+        // List all workflows related to scraping (parent and children for visibility)
+        const scrapingWorkflows = client.workflow.list({
+          query: 'WorkflowType = "scrapingWorkflow"',
+        });
+
+        for await (const workflow of scrapingWorkflows) {
+          console.log('RAW', workflow.workflowId);
+          // Get a handle to access more detailed information
+          const handle = client.workflow.getHandle(workflow.workflowId);
+          const description = await handle.describe();
+
+          console.log('Workflow details:', {
+            workflowId: description.workflowId,
+            workflowType: description.type,
+            status: description.status,
+            startTime: description.startTime,
+            // More detailed info available here
+          });
+        }
+
+        return { workflows: 'boo' };
+      } catch (error) {
+        fastify.log.error('Error listing workflows:', error);
+        reply.code(500);
+        return {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          workflows: [],
+        };
+      }
+    }
+  );
+
+  // Terminate specific workflow and all its children
+  fastify.post(
+    '/scraping/workflows/:workflowId/terminate',
+    {
+      schema: {
+        description:
+          'Terminate a specific scraping workflow and all its children',
+        tags: ['scraping'],
+        params: {
+          type: 'object',
+          properties: {
+            workflowId: { type: 'string' },
+          },
+          required: ['workflowId'],
+        },
+        body: {
+          type: 'object',
+          properties: {
+            reason: { type: 'string', default: 'User requested termination' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              message: { type: 'string' },
+              workflowId: { type: 'string' },
+              terminated: { type: 'boolean' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { workflowId } = request.params as { workflowId: string };
+      const { reason = 'User requested termination' } = request.body as {
+        reason?: string;
+      };
+
+      try {
+        const temporalAddress =
+          process.env.TEMPORAL_ADDRESS || 'localhost:7233';
+        const namespace = process.env.TEMPORAL_NAMESPACE || 'default';
+
+        const connection = await Connection.connect({
+          address: temporalAddress,
+        });
+
+        const client = new Client({
+          connection,
+          namespace,
+        });
+
+        // Get workflow handle
+        const handle = client.workflow.getHandle(workflowId);
+
+        // Terminate the workflow (this will also terminate children due to ParentClosePolicy)
+        await handle.terminate(reason);
+
+        fastify.log.info(
+          `🛑 Terminated workflow ${workflowId} with reason: ${reason}`
+        );
+
+        return {
+          message: `Successfully terminated workflow (children terminated automatically)`,
+          workflowId,
+          terminated: true,
+        };
+      } catch (error) {
+        fastify.log.error(`Error terminating workflow ${workflowId}:`, error);
+        reply.code(500);
+        return {
+          message: `Failed to terminate workflow: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          workflowId,
+          terminated: false,
+        };
+      }
+    }
+  );
+
+  // Terminate all running scraping workflows
+  fastify.post(
+    '/scraping/workflows/terminate-all',
+    {
+      schema: {
+        description:
+          'Terminate all running scraping workflows and their children',
+        tags: ['scraping'],
+        body: {
+          type: 'object',
+          properties: {
+            reason: {
+              type: 'string',
+              default: 'User requested bulk termination',
+            },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              message: { type: 'string' },
+              terminatedCount: { type: 'number' },
+              errors: {
+                type: 'array',
+                items: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { reason = 'User requested bulk termination' } = request.body as {
+        reason?: string;
+      };
+
+      try {
+        const temporalAddress =
+          process.env.TEMPORAL_ADDRESS || 'localhost:7233';
+        const namespace = process.env.TEMPORAL_NAMESPACE || 'default';
+
+        const connection = await Connection.connect({
+          address: temporalAddress,
+        });
+
+        const client = new Client({
+          connection,
+          namespace,
+        });
+
+        // Find only parent scraping workflows - children will be terminated automatically
+        const runningWorkflows = [];
+        const scrapingWorkflows = client.workflow.list({
+          query:
+            'WorkflowType = "scrapingWorkflow" AND ExecutionStatus = "Running"',
+        });
+
+        // Collect parent workflow IDs only
+        for await (const workflow of scrapingWorkflows) {
+          console.log('workflow.workflowId', workflow.workflowId);
+          runningWorkflows.push(workflow.workflowId);
+        }
+        console.log('workflow', runningWorkflows);
+        if (runningWorkflows.length === 0) {
+          return {
+            message: 'No running scraping workflows found',
+            terminatedCount: 0,
+            errors: [],
+          };
+        }
+
+        // Terminate all workflows
+        const terminationPromises = runningWorkflows.map(async (workflowId) => {
+          try {
+            const handle = client.workflow.getHandle(workflowId);
+            await handle.terminate(reason);
+            return { workflowId, success: true };
+          } catch (error) {
+            return {
+              workflowId,
+              success: false,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            };
+          }
+        });
+
+        const results = await Promise.allSettled(terminationPromises);
+
+        let terminatedCount = 0;
+        const errors: string[] = [];
+
+        results.forEach((result) => {
+          if (result.status === 'fulfilled' && result.value.success) {
+            terminatedCount++;
+          } else if (result.status === 'fulfilled' && !result.value.success) {
+            errors.push(`${result.value.workflowId}: ${result.value.error}`);
+          } else if (result.status === 'rejected') {
+            errors.push(`Termination failed: ${result.reason}`);
+          }
+        });
+
+        fastify.log.info(
+          `🛑 Terminated ${terminatedCount} scraping workflows. Errors: ${errors.length}`
+        );
+
+        return {
+          message: `Successfully terminated ${terminatedCount} parent workflows (children terminated automatically)`,
+          terminatedCount,
+          errors,
+        };
+      } catch (error) {
+        fastify.log.error('Error terminating all workflows:', error);
+        console.error('ERROR:', error);
+        reply.code(500);
+        return {
+          message: `Failed to terminate workflows: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          terminatedCount: 0,
+          errors: [error instanceof Error ? error.message : 'Unknown error'],
         };
       }
     }
