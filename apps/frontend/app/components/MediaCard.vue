@@ -26,6 +26,9 @@
           {{ item.categories?.length || 0 }} tags
         </span>
         <span class="text-gray-500 text-xs">
+          {{ item.dateAdded?.slice(0, 10) }}
+        </span>
+        <span class="text-gray-500 text-xs">
           {{ item.sources?.length || 0 }} sources
         </span>
       </div>

@@ -1,6 +1,6 @@
 import { db } from '../connection';
 import { media, sources, categories } from '../schema';
-import { eq, and, inArray, ilike, sql } from 'drizzle-orm';
+import { eq, and, inArray, ilike, sql, desc } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import type { MediaListResponse, MediaQuery } from '@bloop/shared-types';
 
@@ -54,7 +54,7 @@ export interface MediaWithDetails {
 
 export class MediaDao {
   async getAllMedia(): Promise<any[]> {
-    return await db.select().from(media);
+    return await db.select().from(media).orderBy(desc(media.dateAdded));
   }
 
   async getMediaWithPagination(
@@ -152,7 +152,7 @@ export class MediaDao {
       .select()
       .from(media)
       .where(inArray(media.id, paginatedIds))
-      .orderBy(media.createdAt);
+      .orderBy(desc(media.dateAdded));
 
     // Get sources and categories for the paginated media items
     const paginatedMediaIds = mediaItems.map((item) => item.id);
