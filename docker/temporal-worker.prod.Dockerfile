@@ -48,5 +48,5 @@ WORKDIR /app/apps/temporal-worker
 EXPOSE 8080
 
 # Run the temporal worker
-# CMD ["pnpm", "start"]
-CMD ["sleep", "infinity"]
+CMD ["pnpm", "start"]
+# CMD ["sleep", "infinity"]
