@@ -34,6 +34,27 @@ services:
       - AUTH_URL=${AUTH_URL}
       - CRON_SERVICE_ENABLED=${CRON_SERVICE_ENABLED:-true}
       - CRON_SERVICE_FREQUENCY=${CRON_SERVICE_FREQUENCY}
+      - TEMPORAL_ADDRESS=${TEMPORAL_ADDRESS:-localhost:7233}
+      - TEMPORAL_NAMESPACE=${TEMPORAL_NAMESPACE:-default}
+      - TASK_QUEUE=${TASK_QUEUE:-bloop-tasks}
+    networks:
+      - bloop-network
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  temporal-worker:
+    build:
+      context: .
+      dockerfile: docker/temporal-worker.prod.Dockerfile
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
+      - TEMPORAL_ADDRESS=${TEMPORAL_ADDRESS:-localhost:7233}
+      - TEMPORAL_NAMESPACE=${TEMPORAL_NAMESPACE:-default}
+      - TASK_QUEUE=${TASK_QUEUE:-bloop-tasks}
+      - BASE_SCRAPE_URL=${BASE_SCRAPE_URL}
     networks:
       - bloop-network
     depends_on:
