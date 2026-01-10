@@ -23,3 +23,13 @@ The Temporal UI SHALL be accessible from the host machine for monitoring workflo
 - When it starts
 - Then it should map internal port `8080` to host port `8080`
 
+### Requirement: Proxy Configuration
+
+The application SHALL support configuration for an external HTTP proxy to be used for scraping requests.
+
+#### Scenario: Proxy URL Configuration
+
+- Given the application environment variables
+- When `PROXY_URL` is defined (e.g., `http://tor-proxy:3128`)
+- Then the scraping service should use this proxy for outbound requests
+

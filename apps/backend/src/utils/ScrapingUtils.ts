@@ -21,7 +21,7 @@ const DEFAULT_HEADERS = {
 };
 
 export class ScrapingUtils {
-  constructor(private baseUrl: string) {}
+  constructor(private baseUrl: string) { }
 
   async getScrapingInfo() {
     const html = await this.fetchPageHTML(this.baseUrl);
@@ -262,10 +262,35 @@ export class ScrapingUtils {
   private getMediaLinkInfo($: cheerio.CheerioAPI): {
     description: string | null;
     dateAdded: Date | null;
+    duration: string | null;
+    cast: string[];
+    rawDescriptionDiv: string;
   } {
     const descriptionDiv = $('div.the_description');
-    const firstParagraph = descriptionDiv.find('p').first();
-    const description = firstParagraph.text().trim();
+    const firstParagraph = descriptionDiv.find('p:not(.hideUrl)').first();
+    const paragraphHtml = firstParagraph.html() || '';
+
+    const parts = paragraphHtml.split(/<br\s*\/?>/i);
+
+    const stripHtml = (html: string) => $('<div>').html(html).text().trim();
+
+    const description = parts[0] ? stripHtml(parts[0]) || null : null;
+
+    let duration: string | null = null;
+    let cast: string[] = [];
+
+    for (const part of parts) {
+      const text = stripHtml(part);
+      if (text.startsWith('Duration:')) {
+        duration = text.replace('Duration:', '').trim();
+      } else if (text.startsWith('Cast:')) {
+        cast = text
+          .replace('Cast:', '')
+          .split(',')
+          .map((name) => name.trim())
+          .filter(Boolean);
+      }
+    }
 
     const dateAddedElement = $('.about-content .data-row');
     const rawAddedOnDate = dateAddedElement
@@ -277,7 +302,7 @@ export class ScrapingUtils {
       ? parse(rawAddedOnDate, 'MMMM do, yyyy', new Date())
       : null;
 
-    return { description: description ?? null, dateAdded };
+    return { description, dateAdded, duration, cast, rawDescriptionDiv: descriptionDiv.toString() };
   }
 
   private getMediaSources(

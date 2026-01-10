@@ -36,3 +36,14 @@ The Temporal server SHALL be accessible to other services within the Docker netw
 - When other services (backend, worker) attempt to connect to the Temporal server
 - Then they should be able to reach it via `temporal:7233`
 
+### Requirement: Rotating Proxy Service
+
+The development environment SHALL include a rotating proxy service to facilitate IP rotation for web scraping.
+
+#### Scenario: Proxy Service Availability
+
+- Given the `docker-compose.dev.yml` configuration
+- When the stack is started
+- Then a `tor-proxy` service should be running
+- And it should be accessible to other services on port `3128` (or configured port)
+

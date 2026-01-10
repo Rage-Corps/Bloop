@@ -15,3 +15,5 @@ apps/*/dist/
 packages/*/dist/
 
 .env
+.env.*
+!.env.example
