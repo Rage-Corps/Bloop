@@ -1,6 +1,6 @@
 # Spec: Temporal Configuration
 
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: Default Temporal Address
 
