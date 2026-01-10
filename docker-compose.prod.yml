@@ -32,7 +32,7 @@ services:
       - AUTH_URL=${AUTH_URL}
       - CRON_SERVICE_ENABLED=${CRON_SERVICE_ENABLED:-true}
       - CRON_SERVICE_FREQUENCY=${CRON_SERVICE_FREQUENCY}
-      - TEMPORAL_ADDRESS=${TEMPORAL_ADDRESS:-localhost:7233}
+      - TEMPORAL_ADDRESS=${TEMPORAL_ADDRESS:-temporal:7233}
       - TEMPORAL_NAMESPACE=${TEMPORAL_NAMESPACE:-default}
       - TASK_QUEUE=${TASK_QUEUE:-bloop-tasks}
     networks:
@@ -40,6 +40,7 @@ services:
     depends_on:
       - postgres
       - redis
+      - temporal
     restart: unless-stopped
 
   temporal-worker:
@@ -49,7 +50,7 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
-      - TEMPORAL_ADDRESS=${TEMPORAL_ADDRESS:-localhost:7233}
+      - TEMPORAL_ADDRESS=${TEMPORAL_ADDRESS:-temporal:7233}
       - TEMPORAL_NAMESPACE=${TEMPORAL_NAMESPACE:-default}
       - TASK_QUEUE=${TASK_QUEUE:-bloop-tasks}
       - BASE_SCRAPE_URL=${BASE_SCRAPE_URL}
@@ -58,6 +59,35 @@ services:
     depends_on:
       - postgres
       - redis
+      - temporal
+    restart: unless-stopped
+
+  temporal:
+    image: temporalio/auto-setup:latest
+    ports:
+      - '${TEMPORAL_PORT:-7233}:7233'
+    environment:
+      - DB=postgres12
+      - DB_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PWD=${POSTGRES_PASSWORD}
+      - POSTGRES_SEEDS=postgres
+    networks:
+      - bloop-network
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  temporal-ui:
+    image: temporalio/ui:latest
+    ports:
+      - '${TEMPORAL_UI_PORT:-8080}:8080'
+    environment:
+      - TEMPORAL_ADDRESS=temporal:7233
+    networks:
+      - bloop-network
+    depends_on:
+      - temporal
     restart: unless-stopped
 
   postgres:
