@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   frontend:
     build:
@@ -40,8 +38,8 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=${NODE_ENV:-development}
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-dev_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-backend_dev}
+      - REDIS_URL=redis://redis:6379
       - BASE_SCRAPE_URL=${BASE_SCRAPE_URL}
       - HOST=${HOST:-localhost}
       - PORT=${PORT:-3001}
@@ -55,8 +53,10 @@ services:
     networks:
       - dev-network
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
   temporal-worker:
@@ -73,7 +73,7 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=${NODE_ENV:-development}
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-dev_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-backend_dev}
       - TEMPORAL_ADDRESS=${TEMPORAL_ADDRESS:-localhost:7233}
       - TEMPORAL_NAMESPACE=${TEMPORAL_NAMESPACE:-default}
       - TASK_QUEUE=${TASK_QUEUE:-bloop-tasks}
@@ -81,8 +81,11 @@ services:
     networks:
       - dev-network
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: pnpm dev:with-init
     restart: unless-stopped
 
   postgres:
@@ -90,9 +93,16 @@ services:
     ports:
       - '${POSTGRES_PORT:-5432}:5432'
     environment:
+      - POSTGRES_USER=${POSTGRES_USER:-dev_user}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-backend_dev}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dev_user} -d ${POSTGRES_DB:-backend_dev}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - dev-network
     restart: unless-stopped
@@ -103,6 +113,11 @@ services:
       - '${REDIS_PORT:-6379}:6379'
     volumes:
       - redis_cache:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - dev-network
     restart: unless-stopped

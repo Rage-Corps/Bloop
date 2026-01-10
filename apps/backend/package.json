@@ -15,7 +15,7 @@
     "db:studio": "pnpm --filter @bloop/database db:studio",
     "auth:generate": "better-auth generate",
     "start:with-init": "pnpm db:wait && pnpm db:init && pnpm start",
-    "dev:with-init": "pnpm db:wait && pnpm db:init && pnpm dev",
+    "dev:with-init": "pnpm --filter @bloop/shared-types build && pnpm --filter @bloop/database build && pnpm db:wait && pnpm db:init && pnpm dev",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

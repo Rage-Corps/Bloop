@@ -9,7 +9,8 @@
     "start": "node dist/worker.js",
     "start-worker": "tsx src/worker.ts",
     "start-client": "tsx src/client.ts",
-    "test-workflow": "tsx scripts/start-workflow.ts"
+    "test-workflow": "tsx scripts/start-workflow.ts",
+    "dev:with-init": "pnpm --filter @bloop/shared-types build && pnpm --filter @bloop/database build && pnpm dev"
   },
   "keywords": [],
   "author": "",
