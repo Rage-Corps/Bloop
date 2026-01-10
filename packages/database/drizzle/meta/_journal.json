@@ -43,6 +43,13 @@
       "when": 1755619473502,
       "tag": "0005_slippery_tag",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1736549000000,
+      "tag": "0006_add_cast_members_tables",
+      "breakpoints": true
     }
   ]
 }

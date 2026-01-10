@@ -175,6 +175,9 @@ export async function processLink(link: string) {
     sources: mediaSources,
     categories: mediaCategories,
     dateAdded: mediaInfo.dateAdded,
+    duration: mediaInfo.duration,
+    cast: mediaInfo.cast,
+    rawDescriptionDiv: mediaInfo.rawDescriptionDiv,
   };
 
   return media;

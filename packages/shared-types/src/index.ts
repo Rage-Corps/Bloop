@@ -7,8 +7,15 @@ export interface Media {
   pageUrl: string;
   createdAt: string | null; // Always string in API responses
   dateAdded?: string | null;
-  cast?: string | null;
   duration?: string | null;
+  rawDescriptionDiv?: string | null;
+}
+
+// Cast member type
+export interface CastMember {
+  id: string;
+  name: string;
+  createdAt: string | null;
 }
 
 // Source type from database schema
@@ -28,10 +35,11 @@ export interface Category {
   createdAt: string | null; // Always string in API responses
 }
 
-// Media with metadata (sources and categories)
+// Media with metadata (sources, categories, and cast)
 export interface MediaWithMetadata extends Media {
   sources?: Source[];
   categories?: string[]; // Array of category strings for frontend use
+  cast?: string[]; // Array of cast member names for frontend use
 }
 
 // API Response types
@@ -59,8 +67,9 @@ export interface CreateMediaInput {
   thumbnailUrl: string;
   pageUrl: string;
   dateAdded?: string;
-  cast?: string;
   duration?: string;
+  rawDescriptionDiv?: string;
+  cast?: string[];
   sources?: Array<{
     sourceName: string;
     url: string;
@@ -75,8 +84,9 @@ export interface UpdateMediaInput {
   thumbnailUrl?: string;
   pageUrl?: string;
   dateAdded?: string;
-  cast?: string;
   duration?: string;
+  rawDescriptionDiv?: string;
+  cast?: string[];
 }
 
 // Auth types (from better-auth)

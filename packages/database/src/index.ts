@@ -8,6 +8,7 @@ export { CategoryDao } from './dao/categoryDao';
 export { SourceDao } from './dao/sourceDao';
 export { SettingsDao } from './dao/settingsDao';
 export { UserConfigDao } from './dao/userConfigDao';
+export { CastDao } from './dao/castDao';
 
 // Re-export types that are commonly used with DAOs
 export type {
@@ -25,3 +26,7 @@ export type {
   SettingInput,
   SettingItem
 } from './dao/settingsDao';
+
+export type {
+  CastMember
+} from './dao/castDao';

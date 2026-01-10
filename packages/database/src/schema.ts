@@ -8,8 +8,21 @@ export const media = pgTable('media', {
   pageUrl: text('page_url').notNull().unique(),
   createdAt: timestamp('created_at').defaultNow(),
   dateAdded: timestamp('date_added'),
-  cast: text('cast'),
-  duration: text('duration')
+  duration: text('duration'),
+  rawDescriptionDiv: text('raw_description_div')
+})
+
+export const castMembers = pgTable('cast_members', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow()
+})
+
+export const mediaCast = pgTable('media_cast', {
+  id: text('id').primaryKey(),
+  mediaId: text('media_id').notNull().references(() => media.id, { onDelete: 'cascade' }),
+  castMemberId: text('cast_member_id').notNull().references(() => castMembers.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow()
 })
 
 export const sources = pgTable('sources', {

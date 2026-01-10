@@ -1,8 +1,9 @@
 import { db } from '../connection';
-import { media, sources, categories } from '../schema';
+import { media, sources, categories, castMembers, mediaCast } from '../schema';
 import { eq, and, inArray, ilike, sql, desc } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import type { MediaListResponse, MediaQuery } from '@bloop/shared-types';
+import { CastDao } from './castDao';
 
 export interface CreateMediaInput {
   name: string;
@@ -10,8 +11,9 @@ export interface CreateMediaInput {
   thumbnailUrl: string;
   pageUrl: string;
   dateAdded?: string | undefined;
-  cast?: string | undefined;
   duration?: string | undefined;
+  rawDescriptionDiv?: string | undefined;
+  cast?: string[];
   sources?: Array<{
     sourceName: string;
     url: string;
@@ -25,8 +27,9 @@ export interface UpdateMediaInput {
   thumbnailUrl?: string;
   pageUrl?: string;
   dateAdded?: string;
-  cast?: string;
   duration?: string;
+  rawDescriptionDiv?: string;
+  cast?: string[];
 }
 
 export interface MediaWithDetails {
@@ -37,8 +40,13 @@ export interface MediaWithDetails {
   pageUrl: string;
   createdAt: Date | null;
   dateAdded: Date | null;
-  cast: string | null;
   duration: string | null;
+  rawDescriptionDiv: string | null;
+  cast: Array<{
+    id: string;
+    name: string;
+    createdAt: Date | null;
+  }>;
   sources: Array<{
     id: string;
     sourceName: string;
@@ -53,6 +61,8 @@ export interface MediaWithDetails {
 }
 
 export class MediaDao {
+  private castDao = new CastDao();
+
   async getAllMedia(): Promise<any[]> {
     return await db.select().from(media).orderBy(desc(media.dateAdded));
   }
@@ -154,11 +164,12 @@ export class MediaDao {
       .where(inArray(media.id, paginatedIds))
       .orderBy(desc(media.dateAdded));
 
-    // Get sources and categories for the paginated media items
+    // Get sources, categories, and cast for the paginated media items
     const paginatedMediaIds = mediaItems.map((item) => item.id);
 
     let allSources: any[] = [];
     let allCategories: any[] = [];
+    let castByMediaId: Record<string, any[]> = {};
 
     if (paginatedMediaIds.length > 0) {
       allSources = await db
@@ -170,6 +181,8 @@ export class MediaDao {
         .select()
         .from(categories)
         .where(inArray(categories.mediaId, paginatedMediaIds));
+
+      castByMediaId = await this.castDao.getCastByMediaIds(paginatedMediaIds);
     }
 
     // Group sources and categories by mediaId
@@ -198,6 +211,7 @@ export class MediaDao {
       dateAdded: item.dateAdded?.toISOString() || null,
       sources: sourcesByMediaId[item.id] || [],
       categories: categoriesByMediaId[item.id] || [],
+      cast: (castByMediaId[item.id] || []).map((c) => c.name),
     }));
 
     return {
@@ -223,11 +237,13 @@ export class MediaDao {
       .select()
       .from(categories)
       .where(eq(categories.mediaId, id));
+    const mediaCastMembers = await this.castDao.getCastByMediaId(id);
 
     return {
       ...mediaItem[0],
       sources: mediaSources,
       categories: mediaCategories,
+      cast: mediaCastMembers,
     };
   }
 
@@ -244,8 +260,8 @@ export class MediaDao {
         thumbnailUrl: input.thumbnailUrl,
         pageUrl: input.pageUrl,
         dateAdded: input.dateAdded ? new Date(input.dateAdded) : null,
-        cast: input.cast || null,
         duration: input.duration || null,
+        rawDescriptionDiv: input.rawDescriptionDiv || null,
       })
       .returning();
 
@@ -272,6 +288,11 @@ export class MediaDao {
       );
     }
 
+    // Create cast member relationships if provided
+    if (input.cast && input.cast.length > 0) {
+      await this.castDao.replaceCastForMedia(mediaId, input.cast);
+    }
+
     return newMedia[0];
   }
 
@@ -291,14 +312,20 @@ export class MediaDao {
     if (input.pageUrl !== undefined) updateData.pageUrl = input.pageUrl;
     if (input.dateAdded !== undefined)
       updateData.dateAdded = input.dateAdded ? new Date(input.dateAdded) : null;
-    if (input.cast !== undefined) updateData.cast = input.cast;
     if (input.duration !== undefined) updateData.duration = input.duration;
+    if (input.rawDescriptionDiv !== undefined)
+      updateData.rawDescriptionDiv = input.rawDescriptionDiv;
 
     const updatedMedia = await db
       .update(media)
       .set(updateData)
       .where(eq(media.id, id))
       .returning();
+
+    // Update cast if provided
+    if (input.cast !== undefined) {
+      await this.castDao.replaceCastForMedia(id, input.cast);
+    }
 
     return updatedMedia[0];
   }
@@ -310,9 +337,10 @@ export class MediaDao {
       return false;
     }
 
-    // Delete sources and categories (cascade should handle this, but being explicit)
+    // Delete sources, categories, and cast (cascade should handle this, but being explicit)
     await db.delete(sources).where(eq(sources.mediaId, id));
     await db.delete(categories).where(eq(categories.mediaId, id));
+    await this.castDao.unlinkCastFromMedia(id);
 
     // Delete media
     await db.delete(media).where(eq(media.id, id));
@@ -475,8 +503,8 @@ export class MediaDao {
           thumbnailUrl: input.thumbnailUrl,
           pageUrl: input.pageUrl,
           dateAdded: input.dateAdded ? new Date(input.dateAdded) : null,
-          cast: input.cast || null,
           duration: input.duration || null,
+          rawDescriptionDiv: input.rawDescriptionDiv || null,
         })
         .where(eq(media.id, mediaId))
         .returning();
@@ -506,6 +534,13 @@ export class MediaDao {
             category,
           }))
         );
+      }
+
+      // Replace cast members if provided
+      if (input.cast && input.cast.length > 0) {
+        await this.castDao.replaceCastForMedia(mediaId, input.cast);
+      } else {
+        await this.castDao.unlinkCastFromMedia(mediaId);
       }
 
       return updatedMedia[0];

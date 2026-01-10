@@ -123,6 +123,9 @@ async function processAndSaveMedia(
       sources: validSources,
       categories: validCategories,
       dateAdded: media.dateAdded,
+      duration: media.duration || undefined,
+      cast: media.cast || undefined,
+      rawDescriptionDiv: media.rawDescriptionDiv || undefined,
     });
 
     console.log(`💾 Upserted media: ${savedMedia.name} (ID: ${savedMedia.id})`);

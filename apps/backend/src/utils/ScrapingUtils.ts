@@ -164,6 +164,9 @@ export class ScrapingUtils {
         sources: mediaSources,
         categories: mediaCategories,
         dateAdded: mediaInfo.dateAdded,
+        duration: mediaInfo.duration,
+        cast: mediaInfo.cast,
+        rawDescriptionDiv: mediaInfo.rawDescriptionDiv,
       };
 
       return media;
