@@ -2,6 +2,10 @@ import { CreateMediaInput } from '@bloop/database';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { isValid, parse } from 'date-fns';
+import { HttpsProxyAgent } from 'https-proxy-agent';
+
+const PROXY_URL = process.env.PROXY_URL;
+const httpsAgent = PROXY_URL ? new HttpsProxyAgent(PROXY_URL) : undefined;
 
 const DEFAULT_HEADERS = {
   'User-Agent':
@@ -21,7 +25,8 @@ export async function fetchPageHTML(url: string): Promise<string> {
 
     const response = await axios.get(url, {
       headers: DEFAULT_HEADERS,
-      timeout: 30000, // 30 second timeout
+      timeout: 60000, // 60 second timeout (increased for Tor latency)
+      ...(httpsAgent && { httpsAgent, httpAgent: httpsAgent }),
     });
 
     if (response.status !== 200) {

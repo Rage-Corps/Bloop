@@ -3,6 +3,10 @@ import * as cheerio from 'cheerio';
 import { randomUUID } from 'crypto';
 import { ScrapingJobData } from '../types/queue';
 import { parse } from 'date-fns';
+import { ProxyAgent, fetch as undiciFetch } from 'undici';
+
+const PROXY_URL = process.env.PROXY_URL;
+const proxyAgent = PROXY_URL ? new ProxyAgent(PROXY_URL) : undefined;
 
 const DEFAULT_HEADERS = {
   'User-Agent':
@@ -33,8 +37,9 @@ export class ScrapingUtils {
   }
 
   private async fetchPageHTML(url: string): Promise<string> {
-    const response = await fetch(url, {
+    const response = await undiciFetch(url, {
       headers: DEFAULT_HEADERS,
+      ...(proxyAgent && { dispatcher: proxyAgent }),
     });
 
     if (!response.ok) {
