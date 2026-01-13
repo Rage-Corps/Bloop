@@ -17,7 +17,26 @@ const DEFAULT_HEADERS = {
 };
 
 export class Scraping {
+  private static async logFetch(url: string) {
+    if (proxyAgent) {
+      try {
+        const ipResponse = await undiciFetch('https://api.ipify.org?format=json', {
+          dispatcher: proxyAgent,
+          signal: AbortSignal.timeout(5000),
+        });
+        const { ip } = (await ipResponse.json()) as { ip: string };
+        console.log(`🌐 Fetching HTML from: ${url} [Proxy IP: ${ip}]`);
+      } catch (e) {
+        console.log(`🌐 Fetching HTML from: ${url} [Proxy IP Check Failed]`);
+      }
+    } else {
+      console.log(`🌐 Fetching HTML from: ${url} [No Proxy]`);
+    }
+  }
+
   static async fetchPageHTML(url: string): Promise<string> {
+    await this.logFetch(url);
+
     const response = await undiciFetch(url, {
       headers: DEFAULT_HEADERS,
       ...(proxyAgent && { dispatcher: proxyAgent }),

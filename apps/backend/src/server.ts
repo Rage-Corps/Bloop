@@ -7,12 +7,9 @@ import castRoutes from './routes/cast';
 import sourceRoutes from './routes/source';
 import settingsRoutes from './routes/settings';
 import userConfigRoutes from './routes/userConfig';
-import { createBullBoard } from '@bull-board/api';
-import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
-import { FastifyAdapter } from '@bull-board/fastify';
-import { scrapingQueue, initializeWorker } from './jobs/queue';
 import { auth } from './auth';
-import { CronService } from './services/CronService';
+import { SettingsDao } from '@bloop/database';
+import { temporalService } from './services/TemporalService';
 
 const start = async () => {
   const fastify = Fastify({
@@ -113,18 +110,6 @@ const start = async () => {
     },
   });
 
-  const serverAdapter = new FastifyAdapter();
-
-  createBullBoard({
-    queues: [new BullMQAdapter(scrapingQueue)],
-    serverAdapter,
-  });
-
-  serverAdapter.setBasePath('/admin/queues');
-  await fastify.register(serverAdapter.registerPlugin(), {
-    prefix: '/admin/queues',
-  });
-
   await fastify.register(healthRoutes, { prefix: '/api' });
   await fastify.register(mediaRoutes, { prefix: '/api' });
   await fastify.register(scrapingRoutes, { prefix: '/api' });
@@ -134,23 +119,36 @@ const start = async () => {
   await fastify.register(settingsRoutes, { prefix: '/api' });
   await fastify.register(userConfigRoutes, { prefix: '/api' });
 
-  await initializeWorker();
-
-  const cronService = new CronService();
-  await cronService.initialize();
-  await cronService.start();
-
-  // Make cronService available globally for other modules
-  fastify.decorate('cronService', cronService);
+  // Initialize settings and sync Temporal Schedules
+  const settingsDao = new SettingsDao();
+  await settingsDao.initializeDefaults();
+  
+  const cronEnabled = await settingsDao.getBooleanSetting('cron.enabled', true);
+  if (cronEnabled) {
+    const frequencySetting = await settingsDao.getSetting('cron.frequency');
+    const frequency = frequencySetting?.value || '0 * * * *';
+    const baseUrl = process.env.BASE_SCRAPE_URL;
+    
+    if (baseUrl) {
+      try {
+        await temporalService.createOrUpdateScrapingSchedule('scraping-schedule', frequency, {
+          baseUrl,
+          maxPages: 10,
+          batchSize: 5,
+          force: false
+        });
+        fastify.log.info('🔄 Synced Temporal Schedules from database on startup');
+      } catch (error) {
+        fastify.log.error('❌ Failed to sync Temporal Schedules on startup:', error);
+      }
+    }
+  }
 
   try {
     await fastify.listen({ port: 3001, host: '0.0.0.0' });
     fastify.log.info('🚀 Server listening on http://localhost:3001');
     fastify.log.info(
       '📚 API Documentation available at http://localhost:3001/docs'
-    );
-    fastify.log.info(
-      '📋 Bull Board available at http://localhost:3001/admin/queues'
     );
   } catch (err) {
     fastify.log.error('❌ Error starting server:', err);

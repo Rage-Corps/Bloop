@@ -1,11 +1,10 @@
 import { CreateMediaInput } from '@bloop/database';
-import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { isValid, parse } from 'date-fns';
-import { HttpsProxyAgent } from 'https-proxy-agent';
+import { ProxyAgent } from 'undici';
 
 const PROXY_URL = process.env.PROXY_URL;
-const httpsAgent = PROXY_URL ? new HttpsProxyAgent(PROXY_URL) : undefined;
+const proxyAgent = PROXY_URL ? new ProxyAgent(PROXY_URL) : undefined;
 
 const DEFAULT_HEADERS = {
   'User-Agent':
@@ -19,27 +18,68 @@ const DEFAULT_HEADERS = {
   'Upgrade-Insecure-Requests': '1',
 };
 
-export async function fetchPageHTML(url: string): Promise<string> {
-  try {
-    console.log(`🌐 Fetching HTML from: ${url}`);
-
-    const response = await axios.get(url, {
-      headers: DEFAULT_HEADERS,
-      timeout: 60000, // 60 second timeout (increased for Tor latency)
-      ...(httpsAgent && { httpsAgent, httpAgent: httpsAgent }),
-    });
-
-    if (response.status !== 200) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+async function logFetchAttempt(url: string, attempt: number) {
+  if (proxyAgent) {
+    try {
+      const ipResponse = await fetch('https://api.ipify.org?format=json', {
+        // @ts-ignore
+        dispatcher: proxyAgent,
+        signal: AbortSignal.timeout(5000),
+      });
+      const { ip } = (await ipResponse.json()) as { ip: string };
+      console.log(
+        `🌐 Fetching HTML from: ${url} (Attempt ${attempt}) [Proxy IP: ${ip}]`
+      );
+    } catch (e) {
+      console.log(
+        `🌐 Fetching HTML from: ${url} (Attempt ${attempt}) [Proxy IP Check Failed]`
+      );
     }
-
-    return response.data;
-  } catch (error) {
-    console.error(`❌ Failed to fetch HTML from ${url}:`, error);
-    throw new Error(
-      `Failed to fetch page: ${error instanceof Error ? error.message : 'Unknown error'}`
-    );
+  } else {
+    console.log(`🌐 Fetching HTML from: ${url} (Attempt ${attempt}) [No Proxy]`);
   }
+}
+
+export async function fetchPageHTML(url: string): Promise<string> {
+  const maxRetries = 3;
+  const backoffMs = 30000;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await logFetchAttempt(url, attempt);
+
+      const response = await fetch(url, {
+        headers: DEFAULT_HEADERS,
+        // @ts-ignore - dispatcher is an undici extension to fetch
+        dispatcher: proxyAgent,
+        signal: AbortSignal.timeout(60000), // 60 second timeout
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.text();
+    } catch (error) {
+      const is403 =
+        error instanceof Error &&
+        (error.message.includes('403') ||
+          (error as any).status === 403 ||
+          (error as any).response?.status === 403);
+
+      if (is403 && attempt < maxRetries) {
+        console.warn(`⚠️ Received 403 for ${url}. Waiting 30s for proxy rotation...`);
+        await new Promise((resolve) => setTimeout(resolve, backoffMs));
+        continue;
+      }
+
+      console.error(`❌ Failed to fetch HTML from ${url}:`, error);
+      throw new Error(
+        `Failed to fetch page: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+  throw new Error('Maximum retries exceeded');
 }
 
 export async function getMaxPageIndex(
@@ -194,7 +234,14 @@ function getMediaLinkThumbnailAndName(
     return null;
   }
 
-  const name = altText ? decodeURIComponent(altText) : '';
+  let name = altText || '';
+
+  try {
+    name = decodeURIComponent(name);
+  } catch (error) {
+    console.error('Failed to decode alt text:', error);
+  }
+
 
   return { thumbnailUrl, name };
 }

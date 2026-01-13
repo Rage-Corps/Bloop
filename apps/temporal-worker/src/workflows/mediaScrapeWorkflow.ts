@@ -114,6 +114,9 @@ export async function mediaScrapeWorkflow(input: MediaScrapingWorkflowInput) {
         media.dateAdded instanceof Date
           ? media.dateAdded.toISOString()
           : (media.dateAdded ?? new Date().toISOString()),
+      duration: media.duration ?? undefined,
+      cast: media.cast,
+      rawDescriptionDiv: media.rawDescriptionDiv,
     });
 
     return {
