@@ -11,6 +11,8 @@ The system SHALL display the duration and cast members in the `MediaDrawer` comp
 - **THEN** the `MediaDrawer` SHALL close (optional, but usually expected)
 - **AND** the dashboard SHALL be filtered to show only media items featuring "Actor A"
 
+## ADDED Requirements
+
 ### Requirement: Dashboard Filtering
 The system SHALL provide filters for categories, sources, and cast members.
 
@@ -18,8 +20,6 @@ The system SHALL provide filters for categories, sources, and cast members.
 - **GIVEN** the dashboard media library
 - **WHEN** the user selects "Actor A" and "Actor B" from the Cast filter dropdown
 - **THEN** only media items featuring BOTH "Actor A" AND "Actor B" SHALL be displayed
-
-## ADDED Requirements
 
 ### Requirement: Search by Cast Member
 The system SHALL include cast member names in the general search results.

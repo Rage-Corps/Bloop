@@ -1,6 +1,6 @@
 # server Spec Delta
 
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: Media Query Support
 The system SHALL support querying media by name, categories, sources, and cast members.
@@ -14,8 +14,6 @@ The system SHALL support querying media by name, categories, sources, and cast m
 - **GIVEN** an API request to `GET /media` with `name=John`
 - **WHEN** the server processes the request
 - **THEN** it SHALL return media where the name contains "John" OR any cast member's name contains "John"
-
-## ADDED Requirements
 
 ### Requirement: Fetch All Cast Members
 The system SHALL provide an endpoint to retrieve all unique cast members.

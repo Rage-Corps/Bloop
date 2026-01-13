@@ -33,3 +33,10 @@ The application SHALL support configuration for an external HTTP proxy to be use
 - When `PROXY_URL` is defined (e.g., `http://tor-proxy:3128`)
 - Then the scraping service should use this proxy for outbound requests
 
+### Requirement: Media Query Parameters
+The `MediaQuery` type SHALL include parameters for filtering by cast members.
+
+#### Scenario: MediaQuery with cast
+- **GIVEN** the `MediaQuery` interface
+- **THEN** it SHALL include an optional `cast` property of type `string[]`
+

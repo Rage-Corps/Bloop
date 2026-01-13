@@ -1,6 +1,6 @@
 # config Spec Delta
 
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: Media Query Parameters
 The `MediaQuery` type SHALL include parameters for filtering by cast members.
