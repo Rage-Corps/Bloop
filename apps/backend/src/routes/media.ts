@@ -38,7 +38,11 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
                     pageUrl: { type: 'string' },
                     createdAt: { type: 'string' },
                     dateAdded: { type: 'string', nullable: true },
-                    cast: { type: 'string', nullable: true },
+                    cast: {
+                      type: 'array',
+                      items: { type: 'string' },
+                      nullable: true,
+                    },
                     duration: { type: 'string', nullable: true },
                     sources: {
                       type: 'array',
@@ -113,7 +117,11 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
               pageUrl: { type: 'string' },
               createdAt: { type: 'string' },
               dateAdded: { type: 'string', nullable: true },
-              cast: { type: 'string', nullable: true },
+              cast: {
+                type: 'array',
+                items: { type: 'string' },
+                nullable: true,
+              },
               duration: { type: 'string', nullable: true },
               sources: {
                 type: 'array',
@@ -128,13 +136,7 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
               },
               categories: {
                 type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    id: { type: 'string' },
-                    category: { type: 'string' },
-                  },
-                },
+                items: { type: 'string' },
               },
             },
           },

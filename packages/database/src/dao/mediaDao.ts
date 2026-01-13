@@ -42,22 +42,14 @@ export interface MediaWithDetails {
   dateAdded: Date | null;
   duration: string | null;
   rawDescriptionDiv: string | null;
-  cast: Array<{
-    id: string;
-    name: string;
-    createdAt: Date | null;
-  }>;
+  cast: string[];
   sources: Array<{
     id: string;
     sourceName: string;
     url: string;
     createdAt: Date | null;
   }>;
-  categories: Array<{
-    id: string;
-    category: string;
-    createdAt: Date | null;
-  }>;
+  categories: string[];
 }
 
 export class MediaDao {
@@ -242,8 +234,8 @@ export class MediaDao {
     return {
       ...mediaItem[0],
       sources: mediaSources,
-      categories: mediaCategories,
-      cast: mediaCastMembers,
+      categories: mediaCategories.map((c) => c.category),
+      cast: mediaCastMembers.map((c) => c.name),
     };
   }
 

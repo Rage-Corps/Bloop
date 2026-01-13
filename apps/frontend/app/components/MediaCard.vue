@@ -4,13 +4,19 @@
     @click="$emit('click', item)"
   >
     <!-- Thumbnail -->
-    <div class="aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden mb-3">
+    <div class="relative aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden mb-3">
       <img
         :src="item.thumbnailUrl"
         :alt="item.name"
         class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
         @error="handleImageError"
       />
+      <div
+        v-if="item.duration"
+        class="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/70 text-white text-[10px] font-bold rounded backdrop-blur-sm"
+      >
+        {{ item.duration }}
+      </div>
     </div>
 
     <!-- Media Info -->

@@ -55,6 +55,10 @@
                   {{ media.name }}
                 </h3>
                 <div class="flex items-center gap-4 text-sm text-gray-400">
+                  <div v-if="media.duration" class="flex items-center text-primary-400 font-medium">
+                    <UIcon name="i-heroicons-clock" class="mr-1" />
+                    {{ media.duration }}
+                  </div>
                   <div class="flex items-center">
                     <UIcon name="i-heroicons-tag" class="mr-1" />
                     {{ media.categories?.length || 0 }} tags
@@ -84,13 +88,31 @@
                 </div>
               </div>
 
+              <!-- Cast -->
+              <div v-if="media.cast?.length">
+                <h4 class="text-sm font-semibold text-gray-300 mb-2">
+                  Cast
+                </h4>
+                <div class="flex flex-wrap gap-2">
+                  <UBadge
+                    v-for="actor in media.cast"
+                    :key="actor"
+                    color="info"
+                    variant="soft"
+                    size="sm"
+                  >
+                    {{ actor }}
+                  </UBadge>
+                </div>
+              </div>
+
               <!-- Additional Info -->
               <div class="space-y-3">
                 <div v-if="media.description" class="space-y-2">
                   <h4 class="text-sm font-semibold text-gray-300">
                     Description
                   </h4>
-                  <p class="text-sm text-gray-400">{{ media.description }}</p>
+                  <p class="text-sm text-gray-400 leading-relaxed whitespace-pre-line">{{ media.description }}</p>
                 </div>
 
                 <div v-if="media.createdAt" class="space-y-2">
