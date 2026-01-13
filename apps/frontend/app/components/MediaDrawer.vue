@@ -93,17 +93,19 @@
                 <h4 class="text-sm font-semibold text-gray-300 mb-2">
                   Cast
                 </h4>
-                <div class="flex flex-wrap gap-2">
-                  <UBadge
-                    v-for="actor in media.cast"
-                    :key="actor"
-                    color="info"
-                    variant="soft"
-                    size="sm"
-                  >
-                    {{ actor }}
-                  </UBadge>
-                </div>
+                  <div class="flex flex-wrap gap-2">
+                    <UBadge
+                      v-for="actor in media.cast"
+                      :key="actor"
+                      color="info"
+                      variant="soft"
+                      size="sm"
+                      class="cursor-pointer hover:bg-info-500/20 transition-colors"
+                      @click="$emit('filter-cast', actor)"
+                    >
+                      {{ actor }}
+                    </UBadge>
+                  </div>
               </div>
 
               <!-- Additional Info -->
@@ -143,6 +145,7 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{
   close: [];
+  'filter-cast': [actorName: string];
 }>();
 const selectedSourceId = ref<string | undefined>(undefined);
 

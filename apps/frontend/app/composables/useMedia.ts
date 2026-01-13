@@ -31,6 +31,11 @@ export const useMedia = () => {
         params.append('sources', query.sources.join(','));
       }
 
+      const queryAny = query as any;
+      if (queryAny.cast && queryAny.cast.length > 0) {
+        params.append('cast', queryAny.cast.join(','));
+      }
+
       if (query.excludedCategories && query.excludedCategories.length > 0) {
         params.append('excludedCategories', query.excludedCategories.join(','));
       }

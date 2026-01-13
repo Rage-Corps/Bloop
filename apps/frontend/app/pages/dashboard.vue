@@ -3,15 +3,7 @@
     <!-- Main Content Area -->
     <div>
       <!-- Media Grid Header -->
-      <div class="flex justify-between items-center mb-6">
-        <div>
-          <h2 class="text-2xl font-bold text-white">Your Media Library 📚</h2>
-          <p class="text-gray-400 mt-1">
-            {{ mediaData?.total || 0 }} items total (showing
-            {{ mediaData?.data?.length || 0 }})
-          </p>
-        </div>
-
+      <div class="mb-6">
         <!-- Search and Filters -->
         <MediaFilters
           v-model:search-query="searchQuery"
@@ -19,6 +11,7 @@
           v-model:selected-sources="selectedSources"
           v-model:excluded-categories="excludedCategories"
           v-model:preferred-source="preferredSource"
+          v-model:items-per-page="itemsPerPage"
           :available-categories="availableCategories"
           :available-sources="availableSources"
           :loading="loading"
@@ -26,6 +19,12 @@
           @filter="filterMedia"
           @refresh="refreshMedia"
         />
+        <div class="mt-2">
+          <p class="text-gray-400 text-xs">
+            {{ mediaData?.total || 0 }} items total (showing
+            {{ mediaData?.data?.length || 0 }})
+          </p>
+        </div>
       </div>
 
       <!-- Loading State -->
@@ -79,7 +78,7 @@
         <div class="flex justify-center mt-8 pb-8">
           <UPagination
             :total="mediaData.total"
-            :items-per-page="20"
+            :items-per-page="itemsPerPage"
             :sibling-count="2"
             :to="navigateToPage"
             color="primary"
@@ -93,6 +92,7 @@
       :is-open="showMediaDetail"
       :preferred-source="preferredSource"
       @close="closeMediaDetail"
+      @filter-cast="handleCastFilter"
     />
   </div>
 </template>
@@ -114,13 +114,14 @@ const { fetchCategories } = useCategories();
 const { fetchSources } = useSources();
 const { getUserConfig } = useUserConfig();
 
-// Get current page from query parameters, default to 1
+// Get current page and search query from query parameters
 const currentPage = computed(() => parseInt(route.query.page as string) || 1);
+const initialSearchQuery = route.query.q as string || '';
 
 // Reactive data
 const mediaData = ref<MediaListResponse | null>(null);
-const itemsPerPage = 20;
-const searchQuery = ref('');
+const itemsPerPage = ref(20);
+const searchQuery = ref(initialSearchQuery);
 const showMediaDetail = ref(false);
 const selectedMedia = ref<MediaWithMetadata | null>(null);
 
@@ -133,7 +134,7 @@ const availableCategories = ref<{ label: string; value: string }[]>([]);
 const availableSources = ref<{ label: string; value: string }[]>([]);
 
 // Computed
-const offset = computed(() => (currentPage.value - 1) * itemsPerPage);
+const offset = computed(() => (currentPage.value - 1) * itemsPerPage.value);
 
 // Load filter options
 const loadCategories = async () => {
@@ -167,6 +168,7 @@ const loadUserPreferences = async () => {
       const {
         excludedCategories: userExcludedCategories,
         preferredSource: userPreferredSource,
+        itemsPerPage: userItemsPerPage,
       } = userConfig.preferences;
 
       if (userExcludedCategories?.length) {
@@ -175,6 +177,10 @@ const loadUserPreferences = async () => {
 
       if (userPreferredSource) {
         preferredSource.value = userPreferredSource;
+      }
+
+      if (userItemsPerPage) {
+        itemsPerPage.value = userItemsPerPage;
       }
 
       console.log('Loaded user preferences:', userConfig.preferences);
@@ -188,8 +194,8 @@ const loadUserPreferences = async () => {
 // Methods
 const loadMedia = async () => {
   try {
-    const response = await fetchMedia({
-      limit: itemsPerPage,
+    const query: any = {
+      limit: itemsPerPage.value,
       offset: offset.value,
       name: searchQuery.value || undefined,
       categories:
@@ -202,7 +208,8 @@ const loadMedia = async () => {
         excludedCategories.value.length > 0
           ? excludedCategories.value
           : undefined,
-    });
+    };
+    const response = await fetchMedia(query);
     mediaData.value = response;
   } catch (err) {
     console.error('Failed to load media:', err);
@@ -210,8 +217,13 @@ const loadMedia = async () => {
 };
 
 const filterMedia = () => {
-  router.push({ query: { page: 1 } });
-  loadMedia();
+  router.push({
+    query: {
+      ...route.query,
+      page: 1,
+      q: searchQuery.value || undefined,
+    },
+  });
 };
 
 const refreshMedia = () => {
@@ -221,20 +233,25 @@ const refreshMedia = () => {
   preferredSource.value = undefined;
   searchQuery.value = '';
   router.push({ query: { page: 1 } });
-  loadMedia();
 };
 
 const navigateToPage = (page: number) => {
   return {
     query: {
+      ...route.query,
       page,
     },
   };
 };
 
 const debouncedSearch = debounce(() => {
-  router.push({ query: { page: 1 } });
-  loadMedia();
+  router.push({
+    query: {
+      ...route.query,
+      page: 1,
+      q: searchQuery.value || undefined,
+    },
+  });
 }, 500);
 
 const openMediaDetail = (item: MediaWithMetadata) => {
@@ -247,6 +264,12 @@ const closeMediaDetail = () => {
   selectedMedia.value = null;
 };
 
+const handleCastFilter = (actorName: string) => {
+  searchQuery.value = actorName;
+  showMediaDetail.value = false;
+  filterMedia();
+};
+
 // Lifecycle
 onMounted(async () => {
   // Load user preferences first, then load data with those preferences applied
@@ -257,14 +280,17 @@ onMounted(async () => {
   loadSources();
 });
 
-watch(searchQuery, () => {
-  if (!searchQuery.value) {
-    loadMedia();
+watch(
+  () => route.query.q,
+  (newQ) => {
+    if (newQ !== searchQuery.value) {
+      searchQuery.value = (newQ as string) || '';
+    }
   }
-});
+);
 
 watch(
-  () => route.query.page,
+  [() => route.query.page, () => route.query.q, itemsPerPage],
   () => {
     loadMedia();
     window.scrollTo({ top: 0, behavior: 'smooth' });

@@ -3,6 +3,7 @@ import healthRoutes from './routes/health';
 import mediaRoutes from './routes/media';
 import scrapingRoutes from './routes/scraping';
 import categoryRoutes from './routes/category';
+import castRoutes from './routes/cast';
 import sourceRoutes from './routes/source';
 import settingsRoutes from './routes/settings';
 import userConfigRoutes from './routes/userConfig';
@@ -128,6 +129,7 @@ const start = async () => {
   await fastify.register(mediaRoutes, { prefix: '/api' });
   await fastify.register(scrapingRoutes, { prefix: '/api' });
   await fastify.register(categoryRoutes, { prefix: '/api' });
+  await fastify.register(castRoutes, { prefix: '/api' });
   await fastify.register(sourceRoutes, { prefix: '/api' });
   await fastify.register(settingsRoutes, { prefix: '/api' });
   await fastify.register(userConfigRoutes, { prefix: '/api' });

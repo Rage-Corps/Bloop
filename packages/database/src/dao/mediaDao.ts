@@ -1,6 +1,6 @@
 import { db } from '../connection';
 import { media, sources, categories, castMembers, mediaCast } from '../schema';
-import { eq, and, inArray, ilike, sql, desc } from 'drizzle-orm';
+import { eq, and, or, inArray, ilike, sql, desc } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import type { MediaListResponse, MediaQuery } from '@bloop/shared-types';
 import { CastDao } from './castDao';
@@ -70,6 +70,7 @@ export class MediaDao {
       sources: filterSources,
       excludedCategories,
     } = query;
+    const filterCast = (query as any).cast;
 
     // Build base query with joins for all potential filters
     let mediaIdsQuery = db.selectDistinct({ id: media.id }).from(media);
@@ -105,9 +106,37 @@ export class MediaDao {
       whereConditions.push(sql`${media.id} IN ${sourcesSubquery}`);
     }
 
-    // Apply name filter if provided
+    // For cast: media must have ALL specified cast members
+    if (filterCast && filterCast.length > 0) {
+      // Subquery to find media IDs that have ALL required cast members
+      const castSubquery = db
+        .select({ mediaId: mediaCast.mediaId })
+        .from(mediaCast)
+        .innerJoin(castMembers, eq(mediaCast.castMemberId, castMembers.id))
+        .where(inArray(castMembers.name, filterCast))
+        .groupBy(mediaCast.mediaId)
+        .having(
+          sql`COUNT(DISTINCT ${castMembers.name}) = ${filterCast.length}`
+        );
+
+      whereConditions.push(sql`${media.id} IN ${castSubquery}`);
+    }
+
+    // Apply name filter if provided (matches media name OR cast member name)
     if (name) {
-      whereConditions.push(ilike(media.name, `%${name}%`));
+      const nameSearchSubquery = db
+        .select({ id: media.id })
+        .from(media)
+        .leftJoin(mediaCast, eq(media.id, mediaCast.mediaId))
+        .leftJoin(castMembers, eq(mediaCast.castMemberId, castMembers.id))
+        .where(
+          or(
+            ilike(media.name, `%${name}%`),
+            ilike(castMembers.name, `%${name}%`)
+          )
+        );
+
+      whereConditions.push(sql`${media.id} IN ${nameSearchSubquery}`);
     }
 
     // Exclude media with specified categories

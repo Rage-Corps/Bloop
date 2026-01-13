@@ -6,6 +6,7 @@ import { randomUUID } from 'crypto';
 export interface UserPreferences {
   excludedCategories?: string[];
   preferredSource?: string;
+  itemsPerPage?: number;
 }
 
 export interface UserConfigWithPreferences {

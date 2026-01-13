@@ -109,6 +109,23 @@
               Prioritize media from this source when available
             </p>
           </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              Items Per Page
+            </label>
+            <USelect
+              :model-value="itemsPerPage"
+              :items="itemsPerPageOptions"
+              placeholder="Select items per page..."
+              size="md"
+              class="w-full"
+              @update:model-value="handleItemsPerPageChange"
+            />
+            <p class="text-xs text-gray-400 mt-1">
+              Number of media cards to display per page
+            </p>
+          </div>
         </div>
       </div>
     </Transition>
@@ -126,6 +143,10 @@ const props = defineProps({
   availableSources: Array,
   excludedCategories: Array,
   preferredSource: String,
+  itemsPerPage: {
+    type: Number,
+    default: 20,
+  },
   loading: Boolean,
 });
 
@@ -135,6 +156,7 @@ const emit = defineEmits([
   'update:selectedSources',
   'update:excludedCategories',
   'update:preferredSource',
+  'update:itemsPerPage',
   'search',
   'filter',
   'refresh',
@@ -142,6 +164,15 @@ const emit = defineEmits([
 
 // Local state for preferences accordion
 const showPreferences = ref(false);
+
+const itemsPerPageOptions = [
+  { label: '10 per page', value: 10 },
+  { label: '20 per page', value: 20 },
+  { label: '30 per page', value: 30 },
+  { label: '40 per page', value: 40 },
+  { label: '50 per page', value: 50 },
+  { label: '100 per page', value: 100 },
+];
 
 const { patchUserConfig } = useUserConfig();
 
@@ -183,5 +214,14 @@ const handlePreferredSourceChange = (value) => {
 
   // Auto-save preferred source
   debouncedSavePreferences({ preferredSource: sourceValue });
+};
+
+const handleItemsPerPageChange = (value) => {
+  const numValue = Number(value);
+  emit('update:itemsPerPage', numValue);
+  emit('filter');
+
+  // Auto-save items per page
+  debouncedSavePreferences({ itemsPerPage: numValue });
 };
 </script>

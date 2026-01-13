@@ -57,6 +57,7 @@ export interface MediaQuery {
   name?: string;
   categories?: string[];
   sources?: string[];
+  cast?: string[];
   excludedCategories?: string[];
 }
 
@@ -115,6 +116,7 @@ export interface Session {
 export interface UserPreferences {
   excludedCategories?: string[];
   preferredSource?: string;
+  itemsPerPage?: number;
 }
 
 export interface UserConfig {
