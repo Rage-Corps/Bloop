@@ -1,0 +1,1 @@
+ALTER TABLE "cast_members" ADD COLUMN "image_url" text;

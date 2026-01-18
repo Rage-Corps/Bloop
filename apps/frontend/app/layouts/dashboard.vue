@@ -27,6 +27,14 @@
                 color="white"
                 class="hover:bg-primary-500/10"
               />
+              <UButton
+                to="/stars"
+                icon="i-heroicons-user-group"
+                label="Stars"
+                variant="ghost"
+                color="white"
+                class="hover:bg-primary-500/10"
+              />
             </div>
           </div>
 

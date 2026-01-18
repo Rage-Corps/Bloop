@@ -1,11 +1,12 @@
 import { db } from '../connection';
 import { castMembers, mediaCast } from '../schema';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, ilike, inArray, isNull, sql } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
 export interface CastMember {
   id: string;
   name: string;
+  imageUrl: string | null;
   createdAt: Date | null;
 }
 
@@ -51,6 +52,7 @@ export class CastDao {
       .select({
         id: castMembers.id,
         name: castMembers.name,
+        imageUrl: castMembers.imageUrl,
         createdAt: castMembers.createdAt,
       })
       .from(mediaCast)
@@ -70,6 +72,7 @@ export class CastDao {
         mediaId: mediaCast.mediaId,
         id: castMembers.id,
         name: castMembers.name,
+        imageUrl: castMembers.imageUrl,
         createdAt: castMembers.createdAt,
       })
       .from(mediaCast)
@@ -85,6 +88,7 @@ export class CastDao {
       result[relation.mediaId].push({
         id: relation.id,
         name: relation.name,
+        imageUrl: relation.imageUrl,
         createdAt: relation.createdAt,
       });
     }
@@ -128,8 +132,27 @@ export class CastDao {
     );
   }
 
-  async getAllCastMembers(): Promise<CastMember[]> {
-    return await db.select().from(castMembers);
+  async getAllCastMembers(filter?: { name?: string }): Promise<{ data: CastMember[], total: number }> {
+    let query = db.select().from(castMembers);
+    let countQuery = db.select({ count: sql<number>`count(*)` }).from(castMembers);
+
+    if (filter?.name) {
+      const nameFilter = ilike(castMembers.name, `%${filter.name}%`);
+      // @ts-ignore
+      query = query.where(nameFilter);
+      // @ts-ignore
+      countQuery = countQuery.where(nameFilter);
+    }
+
+    const [data, countResult] = await Promise.all([
+      query,
+      countQuery
+    ]);
+
+    return {
+      data,
+      total: Number(countResult[0].count)
+    };
   }
 
   async getCastMemberByName(name: string): Promise<CastMember | null> {
@@ -139,5 +162,19 @@ export class CastDao {
       .where(eq(castMembers.name, name));
 
     return result.length > 0 ? result[0] : null;
+  }
+
+  async updateImageUrl(id: string, imageUrl: string): Promise<void> {
+    await db
+      .update(castMembers)
+      .set({ imageUrl })
+      .where(eq(castMembers.id, id));
+  }
+
+  async getCastWithoutImages(): Promise<CastMember[]> {
+    return await db
+      .select()
+      .from(castMembers)
+      .where(isNull(castMembers.imageUrl));
   }
 }

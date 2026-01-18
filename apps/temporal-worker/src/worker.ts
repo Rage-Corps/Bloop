@@ -1,8 +1,8 @@
 import { NativeConnection, Worker } from '@temporalio/worker';
 
 import * as scrapingActivities from './activities/scraping';
-
 import * as dbActivities from './activities/db';
+import * as starsActivities from './activities/stars';
 
 async function run() {
   // Get configuration from environment variables
@@ -33,6 +33,7 @@ async function run() {
       activities: {
         ...scrapingActivities,
         ...dbActivities,
+        ...starsActivities,
       },
       maxConcurrentActivityTaskExecutions: 10,
       maxConcurrentWorkflowTaskExecutions: 10,

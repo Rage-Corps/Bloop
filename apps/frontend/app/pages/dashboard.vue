@@ -83,6 +83,14 @@
             :to="navigateToPage"
             color="primary"
           />
+          <UButton
+            icon="i-heroicons-sparkles"
+            label="Random Page"
+            variant="ghost"
+            color="primary"
+            class="ml-4"
+            @click="jumpToRandomPage"
+          />
         </div>
       </div>
     </div>
@@ -242,6 +250,22 @@ const navigateToPage = (page: number) => {
       page,
     },
   };
+};
+
+const jumpToRandomPage = () => {
+  if (!mediaData.value?.total) return;
+
+  const totalPages = Math.ceil(mediaData.value.total / itemsPerPage.value);
+  if (totalPages <= 1) return;
+
+  const randomPage = Math.floor(Math.random() * totalPages) + 1;
+
+  router.push({
+    query: {
+      ...route.query,
+      page: randomPage,
+    },
+  });
 };
 
 const debouncedSearch = debounce(() => {

@@ -15,6 +15,7 @@ export interface Media {
 export interface CastMember {
   id: string;
   name: string;
+  imageUrl?: string | null;
   createdAt: string | null;
 }
 
@@ -48,6 +49,11 @@ export interface MediaListResponse {
   total: number;
   limit: number;
   offset: number;
+}
+
+export interface CastListResponse {
+  data: CastMember[];
+  total: number;
 }
 
 // Query parameters for media API

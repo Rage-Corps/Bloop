@@ -15,6 +15,7 @@ export const media = pgTable('media', {
 export const castMembers = pgTable('cast_members', {
   id: text('id').primaryKey(),
   name: text('name').notNull().unique(),
+  imageUrl: text('image_url'),
   createdAt: timestamp('created_at').defaultNow()
 })
 

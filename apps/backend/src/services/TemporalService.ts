@@ -43,6 +43,20 @@ export class TemporalService {
     return workflowId;
   }
 
+  async triggerStarImageDiscovery() {
+    const client = await this.getClient();
+    const taskQueue = process.env.TASK_QUEUE || 'bloop-tasks';
+    const workflowId = `star-discovery-${Date.now()}`;
+
+    await client.workflow.start('starImageDiscoveryWorkflow', {
+      taskQueue,
+      workflowId,
+      workflowExecutionTimeout: '1h',
+    });
+
+    return workflowId;
+  }
+
   async listScrapingWorkflows() {
     const client = await this.getClient();
     const workflows = [];

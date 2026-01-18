@@ -137,8 +137,8 @@ const closeMediaDetail = () => {
 };
 
 const handleCastFilter = (actorName: string) => {
-  router.push({
-    path: '/',
+  navigateTo({
+    path: '/dashboard',
     query: { q: actorName }
   });
 };
