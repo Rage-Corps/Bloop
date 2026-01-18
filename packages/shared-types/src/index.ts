@@ -132,3 +132,16 @@ export interface ApiError {
   error: string;
   code?: number;
 }
+
+// Watchlist types
+export interface WatchlistItem {
+  id: string;
+  userId: string;
+  mediaId: string;
+  createdAt: string | null;
+}
+
+export interface WatchlistStatus {
+  mediaId: string;
+  isInWatchlist: boolean;
+}

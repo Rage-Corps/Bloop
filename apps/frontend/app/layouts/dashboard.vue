@@ -5,8 +5,29 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
           <!-- Logo/Brand -->
-          <div class="flex items-center space-x-4">
-            <h1 class="text-2xl font-bold text-primary">🫧 Bloop</h1>
+          <div class="flex items-center space-x-8">
+            <NuxtLink to="/" class="flex items-center space-x-4">
+              <h1 class="text-2xl font-bold text-primary">🫧 Bloop</h1>
+            </NuxtLink>
+
+            <div class="hidden md:flex items-center space-x-1">
+              <UButton
+                to="/"
+                icon="i-heroicons-home"
+                label="Home"
+                variant="ghost"
+                color="white"
+                class="hover:bg-primary-500/10"
+              />
+              <UButton
+                to="/watchlist"
+                icon="i-heroicons-heart"
+                label="Watchlist"
+                variant="ghost"
+                color="white"
+                class="hover:bg-primary-500/10"
+              />
+            </div>
           </div>
 
           <!-- User Menu -->

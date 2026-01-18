@@ -48,13 +48,25 @@
               </div>
             </div>
 
-            <!-- Media Info -->
-            <div class="space-y-4">
-              <div>
-                <h3 class="text-xl font-bold text-white mb-2">
-                  {{ media.name }}
-                </h3>
-                <div class="flex items-center gap-4 text-sm text-gray-400">
+              <!-- Media Info -->
+              <div class="space-y-4">
+                <div>
+                  <div class="flex items-start justify-between gap-4 mb-2">
+                    <h3 class="text-xl font-bold text-white">
+                      {{ media.name }}
+                    </h3>
+                    <UButton
+                      v-if="media"
+                      :icon="isWatchlisted ? 'i-heroicons-heart-solid' : 'i-heroicons-heart'"
+                      :color="isWatchlisted ? 'primary' : 'white'"
+                      variant="ghost"
+                      size="sm"
+                      label="Watchlist"
+                      @click="toggleWatchlist(media)"
+                    />
+                  </div>
+                  <div class="flex items-center gap-4 text-sm text-gray-400">
+
                   <div v-if="media.duration" class="flex items-center text-primary-400 font-medium">
                     <UIcon name="i-heroicons-clock" class="mr-1" />
                     {{ media.duration }}
@@ -147,6 +159,10 @@ const emit = defineEmits<{
   close: [];
   'filter-cast': [actorName: string];
 }>();
+
+const { checkStatus, toggleWatchlist } = useWatchlist();
+const isWatchlisted = computed(() => props.media ? checkStatus(props.media.id) : false);
+
 const selectedSourceId = ref<string | undefined>(undefined);
 
 const sourceOptions = computed(() => {

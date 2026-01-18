@@ -9,6 +9,7 @@ export { SourceDao } from './dao/sourceDao';
 export { SettingsDao } from './dao/settingsDao';
 export { UserConfigDao } from './dao/userConfigDao';
 export { CastDao } from './dao/castDao';
+export { WatchlistDao } from './dao/watchlistDao';
 
 // Re-export types that are commonly used with DAOs
 export type {

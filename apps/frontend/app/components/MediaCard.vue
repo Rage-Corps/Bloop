@@ -17,6 +17,17 @@
       >
         {{ item.duration }}
       </div>
+
+      <!-- Watchlist Toggle -->
+      <UButton
+        :icon="isWatchlisted ? 'i-heroicons-heart-solid' : 'i-heroicons-heart'"
+        :color="isWatchlisted ? 'primary' : 'white'"
+        variant="ghost"
+        size="lg"
+        class="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+        :class="{ 'opacity-100': isWatchlisted }"
+        @click.stop="toggleWatchlist(item)"
+      />
     </div>
 
     <!-- Media Info -->
@@ -70,10 +81,13 @@ interface Props {
   item: MediaWithMetadata;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 defineEmits<{
   click: [item: MediaWithMetadata];
 }>();
+
+const { checkStatus, toggleWatchlist } = useWatchlist();
+const isWatchlisted = computed(() => checkStatus(props.item.id));
 
 const handleImageError = (event: Event) => {
   const img = event.target as HTMLImageElement;

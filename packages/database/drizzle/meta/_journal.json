@@ -50,6 +50,13 @@
       "when": 1736549000000,
       "tag": "0006_add_cast_members_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1768764955605,
+      "tag": "0007_curved_morbius",
+      "breakpoints": true
     }
   ]
 }

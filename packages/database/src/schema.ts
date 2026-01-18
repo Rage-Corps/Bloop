@@ -122,3 +122,10 @@ export const userConfig = pgTable("user_config", {
     .$defaultFn(() => new Date())
     .notNull(),
 });
+
+export const watchlist = pgTable('watchlist', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  mediaId: text('media_id').notNull().references(() => media.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow()
+});
