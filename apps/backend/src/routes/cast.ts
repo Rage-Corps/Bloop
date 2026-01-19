@@ -40,7 +40,8 @@ export default async function castRoutes(fastify: FastifyInstance) {
     },
     async (request, _reply) => {
       const { name } = request.query as { name?: string };
-      const { data, total } = await castDao.getAllCastMembers({ name });
+      const filter = name !== undefined ? { name } : undefined;
+      const { data, total } = await castDao.getAllCastMembers(filter);
       return {
         data: data.map((c) => ({
           id: c.id,
