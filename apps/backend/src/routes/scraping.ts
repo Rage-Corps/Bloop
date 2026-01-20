@@ -256,4 +256,90 @@ export default async function scrapingRoutes(fastify: FastifyInstance) {
       }
     }
   );
+
+  // Trigger full scrape operation (force mode, unlimited pages)
+  fastify.post(
+    '/scraping/full',
+    {
+      schema: {
+        description: 'Trigger a full scrape operation (force mode, unlimited pages)',
+        tags: ['scraping'],
+        body: {
+          type: 'object',
+          properties: {
+            batchSize: {
+              type: 'number',
+              minimum: 1,
+              maximum: 50,
+              default: 5,
+              description: 'Number of pages to process in parallel per batch',
+            },
+          },
+        },
+        response: {
+          201: {
+            type: 'object',
+            properties: {
+              workflowId: { type: 'string' },
+              message: { type: 'string' },
+              status: { type: 'string' },
+            },
+          },
+          400: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+              message: { type: 'string' },
+            },
+          },
+          500: {
+            type: 'object',
+            properties: {
+              error: { type: 'string' },
+              message: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { batchSize = 5 } = request.body as { batchSize?: number };
+
+      const baseUrl = process.env.BASE_SCRAPE_URL;
+      if (!baseUrl) {
+        reply.code(400);
+        return {
+          error: 'Configuration Error',
+          message: 'BASE_SCRAPE_URL not configured',
+        };
+      }
+
+      try {
+        const workflowId = await temporalService.triggerScraping({
+          force: true,
+          batchSize,
+          maxPages: undefined,
+          baseUrl,
+        });
+
+        fastify.log.info(
+          `🚀 Started full scrape workflow: ${workflowId}`
+        );
+
+        reply.code(201);
+        return {
+          workflowId,
+          message: 'Full scrape workflow started successfully (force mode, unlimited pages)',
+          status: 'running',
+        };
+      } catch (error) {
+        fastify.log.error('Error starting full scrape workflow:', error);
+        reply.code(500);
+        return {
+          error: 'Internal Server Error',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        };
+      }
+    }
+  );
 }
