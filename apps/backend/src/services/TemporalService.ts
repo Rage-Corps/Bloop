@@ -131,7 +131,7 @@ export class TemporalService {
         },
         action: {
           type: 'startWorkflow',
-          workflowType: 'scrapingWorkflow',
+          workflowType: 'scheduledScrapingWorkflow',
           args: [input],
           taskQueue,
         },
