@@ -81,17 +81,10 @@ The navigation header SHALL include a link to the Watchlist page.
 ### Requirement: Stars Page
 The system SHALL provide a dedicated page at `/stars` to browse media by cast member.
 
-#### Scenario: View Stars list
-- **GIVEN** an authenticated user
-- **WHEN** they navigate to the `/stars` page
-- **THEN** they SHALL see a grid of cast members
-- **AND** each cast member SHALL be displayed with their name and image
-
-#### Scenario: Filter media by star
+#### Scenario: No Discover Images button
 - **GIVEN** the stars page
-- **WHEN** the user clicks on a cast member card
-- **THEN** they SHALL be navigated to the dashboard
-- **AND** the dashboard SHALL be filtered to show only media featuring that cast member
+- **WHEN** the page is rendered
+- **THEN** it SHALL NOT contain a "Discover Images" button
 
 ### Requirement: Header Link to Stars Page
 The navigation header SHALL include a link to the Stars page.
@@ -109,4 +102,28 @@ The system SHALL include a `CastMemberCard` component to display individual perf
 - **WHEN** the `CastMemberCard` is rendered
 - **THEN** it SHALL display the performer's image
 - **AND** it SHALL display the performer's name
+
+### Requirement: Header User Menu
+The navigation header SHALL include a dropdown menu triggered by the user avatar.
+
+#### Scenario: Access Settings from Header
+- **GIVEN** any page with the navigation header
+- **WHEN** the user clicks on the user avatar/dropdown
+- **THEN** they SHALL see an option for "Settings"
+- **AND** clicking it SHALL navigate them to the `/settings` page
+
+### Requirement: Settings Page
+The system SHALL provide a dedicated page at `/settings` for administrative tasks and configuration.
+
+#### Scenario: Trigger Full Scrape
+- **GIVEN** the settings page
+- **WHEN** the user clicks the "Full Scrape" button
+- **THEN** the system SHALL trigger the `scrapingWorkflow`
+- **AND** a confirmation toast SHALL be displayed
+
+#### Scenario: Trigger Star Image Discovery
+- **GIVEN** the settings page
+- **WHEN** the user clicks the "Discover Images" button
+- **THEN** the system SHALL trigger the `starImageDiscoveryWorkflow`
+- **AND** a confirmation toast SHALL be displayed
 
