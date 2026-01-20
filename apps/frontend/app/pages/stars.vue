@@ -24,12 +24,6 @@
           @click="loadStars"
           :loading="loading"
         />
-        <UButton
-          icon="i-heroicons-sparkles"
-          label="Discover Images"
-          color="primary"
-          @click="onDiscoverImages"
-        />
       </div>
     </div>
 
@@ -77,7 +71,6 @@ const { fetchCastMembers, discoverImages, loading, error } = useCastMembers();
 const stars = ref<CastMember[]>([]);
 const total = ref<number | null>(null);
 const searchQuery = ref('');
-const toast = useToast();
 
 const loadStars = async () => {
   try {
@@ -94,19 +87,6 @@ const loadStars = async () => {
 const onSearch = useDebounceFn(() => {
   loadStars();
 }, 300);
-
-const onDiscoverImages = async () => {
-  try {
-    await discoverImages();
-    toast.add({
-      title: 'Discovery Started',
-      description: 'Image discovery workflow has been triggered in the background.',
-      color: 'primary'
-    });
-  } catch (err) {
-    console.error('Failed to discover images:', err);
-  }
-};
 
 const onStarClick = (star: CastMember) => {
   navigateTo({

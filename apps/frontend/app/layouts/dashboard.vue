@@ -41,21 +41,37 @@
           <!-- User Menu -->
           <div class="flex items-center space-x-4">
             <ClientOnly>
-              <div class="hidden sm:flex items-center space-x-3">
-                <UAvatar
-                  :alt="user?.name || user?.email || 'User'"
-                  size="sm"
-                  :ui="{ icon: 'bg-primary-500' }"
-                >
-                  {{ getUserInitials() }}
-                </UAvatar>
-                <div class="text-sm">
-                  <p class="font-medium text-white">
-                    {{ user?.name || 'User' }}
-                  </p>
-                  <p class="text-gray-500">{{ user?.email }}</p>
+              <UDropdown
+                :items="userMenuItems"
+                :popper="{ placement: 'bottom-end' }"
+                class="relative inline-flex"
+              >
+                <div class="flex items-center space-x-3 cursor-pointer">
+                  <UAvatar
+                    :alt="user?.name || user?.email || 'User'"
+                    size="sm"
+                    :ui="{ icon: 'bg-primary-500' }"
+                  >
+                    {{ getUserInitials() }}
+                  </UAvatar>
+                  <div class="hidden sm:block text-sm text-left">
+                    <p class="font-medium text-white truncate max-w-[120px]">
+                      {{ user?.name || 'User' }}
+                    </p>
+                    <p class="text-gray-500 truncate max-w-[120px]">
+                      {{ user?.email }}
+                    </p>
+                  </div>
                 </div>
-              </div>
+
+                <template #item="{ item }">
+                  <span class="truncate">{{ item.label }}</span>
+                  <UIcon
+                    :name="item.icon"
+                    class="flex-shrink-0 h-4 w-4 text-gray-400 ms-auto"
+                  />
+                </template>
+              </UDropdown>
               <template #fallback>
                 <div class="hidden sm:flex items-center space-x-3">
                   <div class="w-8 h-8 bg-gray-700 rounded-full animate-pulse"></div>
@@ -99,7 +115,7 @@ const handleLogout = async () => {
   }
 };
 
-const userMenuItems = [
+const userMenuItems = computed(() => [
   [
     {
       label: user.value?.email || 'Profile',
@@ -112,8 +128,7 @@ const userMenuItems = [
       label: 'Settings',
       icon: 'i-heroicons-cog-6-tooth',
       click: () => {
-        // Navigate to settings when implemented
-        console.log('Settings clicked');
+        navigateTo('/settings');
       },
     },
   ],
@@ -124,5 +139,5 @@ const userMenuItems = [
       click: handleLogout,
     },
   ],
-];
+]);
 </script>

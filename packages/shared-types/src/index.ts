@@ -76,7 +76,7 @@ export interface CreateMediaInput {
   dateAdded?: string;
   duration?: string;
   rawDescriptionDiv?: string;
-  cast?: string[];
+  cast?: (string | { name: string; imageUrl?: string | null })[];
   sources?: Array<{
     sourceName: string;
     url: string;
@@ -93,7 +93,7 @@ export interface UpdateMediaInput {
   dateAdded?: string;
   duration?: string;
   rawDescriptionDiv?: string;
-  cast?: string[];
+  cast?: (string | { name: string; imageUrl?: string | null })[];
 }
 
 // Auth types (from better-auth)

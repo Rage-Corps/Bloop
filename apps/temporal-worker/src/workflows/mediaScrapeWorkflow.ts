@@ -1,15 +1,19 @@
 import { proxyActivities } from '@temporalio/workflow';
 import type * as scrapingActivities from '../activities/scraping';
 import type * as dbActivities from '../activities/db';
+import type * as starsActivities from '../activities/stars';
 import { MediaScrapingWorkflowInput } from '../types';
 
 const { processLink } = proxyActivities<typeof scrapingActivities>({
   startToCloseTimeout: '120s', // Allow more time for HTTP requests
   heartbeatTimeout: '10s',
 });
-const { saveMedia } = proxyActivities<typeof dbActivities>({
+const { saveMedia, getCastByName } = proxyActivities<typeof dbActivities>({
   startToCloseTimeout: '120s', // Allow more time for HTTP requests
   heartbeatTimeout: '10s',
+});
+const { findStarImage } = proxyActivities<typeof starsActivities>({
+  startToCloseTimeout: '60s',
 });
 
 // Helper functions for media validation and processing
@@ -102,6 +106,22 @@ export async function mediaScrapeWorkflow(input: MediaScrapingWorkflowInput) {
       media.name || 'Unknown'
     );
 
+    // Process cast and fetch images if missing
+    const castWithImages = [];
+    if (media.cast && Array.isArray(media.cast)) {
+      for (const name of media.cast) {
+        if (typeof name !== 'string') continue;
+
+        const existingCast = await getCastByName(name);
+        if (!existingCast || !existingCast.imageUrl) {
+          const imageUrl = await findStarImage(name);
+          castWithImages.push({ name, imageUrl });
+        } else {
+          castWithImages.push({ name, imageUrl: existingCast.imageUrl });
+        }
+      }
+    }
+
     // Save media with validated data
     await saveMedia({
       name: media.name!.trim(),
@@ -115,7 +135,7 @@ export async function mediaScrapeWorkflow(input: MediaScrapingWorkflowInput) {
           ? media.dateAdded.toISOString()
           : (media.dateAdded ?? new Date().toISOString()),
       duration: media.duration ?? undefined,
-      cast: media.cast,
+      cast: castWithImages,
       rawDescriptionDiv: media.rawDescriptionDiv,
     });
 

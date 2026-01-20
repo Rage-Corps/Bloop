@@ -70,10 +70,23 @@ export const useMedia = () => {
     }
   };
 
+  const triggerFullScrape = async (batchSize: number = 5) => {
+    try {
+      await $fetch(`${config.public.backendUrl}/api/scraping/full`, {
+        method: 'POST',
+        body: { batchSize },
+      });
+    } catch (err: any) {
+      error.value = err.message || 'Failed to trigger full scrape';
+      throw err;
+    }
+  };
+
   return {
     loading: readonly(loading),
     error: readonly(error),
     fetchMedia,
     fetchMediaById,
+    triggerFullScrape,
   };
 };

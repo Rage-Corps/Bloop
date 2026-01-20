@@ -11,13 +11,21 @@ export interface CastMember {
 }
 
 export class CastDao {
-  async findOrCreateByName(name: string): Promise<CastMember> {
+  async findOrCreateByName(name: string, imageUrl?: string | null): Promise<CastMember> {
     const existing = await db
       .select()
       .from(castMembers)
       .where(eq(castMembers.name, name));
 
     if (existing.length > 0) {
+      if (imageUrl && existing[0].imageUrl !== imageUrl) {
+        const updated = await db
+          .update(castMembers)
+          .set({ imageUrl })
+          .where(eq(castMembers.id, existing[0].id))
+          .returning();
+        return updated[0];
+      }
       return existing[0];
     }
 
@@ -26,21 +34,24 @@ export class CastDao {
       .values({
         id: randomUUID(),
         name,
+        imageUrl,
       })
       .returning();
 
     return newCastMember[0];
   }
 
-  async findOrCreateMany(names: string[]): Promise<CastMember[]> {
-    if (names.length === 0) {
+  async findOrCreateMany(cast: (string | { name: string, imageUrl?: string | null })[]): Promise<CastMember[]> {
+    if (cast.length === 0) {
       return [];
     }
 
     const results: CastMember[] = [];
 
-    for (const name of names) {
-      const castMember = await this.findOrCreateByName(name);
+    for (const item of cast) {
+      const name = typeof item === 'string' ? item : item.name;
+      const imageUrl = typeof item === 'string' ? undefined : item.imageUrl;
+      const castMember = await this.findOrCreateByName(name, imageUrl);
       results.push(castMember);
     }
 
@@ -114,16 +125,16 @@ export class CastDao {
     await db.delete(mediaCast).where(eq(mediaCast.mediaId, mediaId));
   }
 
-  async replaceCastForMedia(mediaId: string, castNames: string[]): Promise<void> {
+  async replaceCastForMedia(mediaId: string, cast: (string | { name: string, imageUrl?: string | null })[]): Promise<void> {
     // Remove existing cast links
     await this.unlinkCastFromMedia(mediaId);
 
-    if (castNames.length === 0) {
+    if (cast.length === 0) {
       return;
     }
 
     // Find or create cast members
-    const castMemberRecords = await this.findOrCreateMany(castNames);
+    const castMemberRecords = await this.findOrCreateMany(cast);
 
     // Link cast members to media
     await this.linkCastToMedia(
@@ -156,6 +167,10 @@ export class CastDao {
   }
 
   async getCastMemberByName(name: string): Promise<CastMember | null> {
+    return this.getByName(name);
+  }
+
+  async getByName(name: string): Promise<CastMember | null> {
     const result = await db
       .select()
       .from(castMembers)
