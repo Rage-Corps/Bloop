@@ -25,6 +25,7 @@
     "@temporalio/workflow": "^1.12.2",
     "cheerio": "^1.1.2",
     "date-fns": "^4.1.0",
+    "pornhub.js": "^1.14.1",
     "undici": "^7.18.2"
   },
   "devDependencies": {
