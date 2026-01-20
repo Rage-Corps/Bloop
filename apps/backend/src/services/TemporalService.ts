@@ -36,8 +36,8 @@ export class TemporalService {
       args: [input],
       taskQueue,
       workflowId,
-      workflowExecutionTimeout: '2h',
-      workflowRunTimeout: '2h',
+      workflowExecutionTimeout: input.maxPages ? '2h' : '12h',
+      workflowRunTimeout: input.maxPages ? '2h' : '12h',
     });
 
     return workflowId;
@@ -110,7 +110,7 @@ export class TemporalService {
     try {
       const handle = client.schedule.getHandle(scheduleId);
       await handle.describe();
-      
+
       // If it exists, we update it
       await handle.update((prev) => ({
         ...prev,
