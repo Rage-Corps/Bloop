@@ -124,13 +124,13 @@ const start = async () => {
   // Initialize settings and sync Temporal Schedules
   const settingsDao = new SettingsDao();
   await settingsDao.initializeDefaults();
-  
+
   const cronEnabled = await settingsDao.getBooleanSetting('cron.enabled', true);
   if (cronEnabled) {
     const frequencySetting = await settingsDao.getSetting('cron.frequency');
-    const frequency = frequencySetting?.value || '0 * * * *';
+    const frequency = frequencySetting?.value || '0 */12 * * *';
     const baseUrl = process.env.BASE_SCRAPE_URL;
-    
+
     if (baseUrl) {
       try {
         await temporalService.createOrUpdateScrapingSchedule('scraping-schedule', frequency, {
