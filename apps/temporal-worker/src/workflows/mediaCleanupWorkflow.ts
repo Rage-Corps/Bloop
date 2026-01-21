@@ -2,7 +2,7 @@ import { proxyActivities, sleep } from '@temporalio/workflow';
 import type * as activities from '../activities/mediaCleanup';
 
 const { getMediaSources, validateMediaSource, deleteMediaSource } = proxyActivities<typeof activities>({
-  startToCloseTimeout: '1 minute',
+  startToCloseTimeout: '10 minutes',
   retry: {
     initialInterval: '1s',
     backoffCoefficient: 2,

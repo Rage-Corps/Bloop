@@ -13,7 +13,13 @@ export class SourceDao {
   }
 
   async getAllSources() {
-    return await db.select().from(sources);
+    return await db
+      .select({
+        id: sources.id,
+        url: sources.url,
+        mediaId: sources.mediaId,
+      })
+      .from(sources);
   }
 
   async deleteSource(id: string) {
