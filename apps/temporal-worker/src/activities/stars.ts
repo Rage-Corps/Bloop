@@ -52,3 +52,8 @@ export async function getAllCastMembers(): Promise<{ id: string, name: string, i
   const result = await castDao.getAllCastMembers();
   return result.data.map(c => ({ id: c.id, name: c.name, imageUrl: c.imageUrl }));
 }
+
+export async function getAllCastMembersUnpaginated(): Promise<{ id: string, name: string, imageUrl: string | null }[]> {
+  const result = await castDao.getAllCastMembers({ limit: 999999 });
+  return result.data.map(c => ({ id: c.id, name: c.name, imageUrl: c.imageUrl }));
+}
