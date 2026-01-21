@@ -51,7 +51,8 @@ export class TemporalService {
     await client.workflow.start('starImageDiscoveryWorkflow', {
       taskQueue,
       workflowId,
-      workflowExecutionTimeout: '1h',
+      workflowExecutionTimeout: '4h',
+      workflowRunTimeout: '4h',
     });
 
     return workflowId;

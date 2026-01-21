@@ -89,6 +89,7 @@ export default async function castRoutes(fastify: FastifyInstance) {
       return {
         workflowId,
         message: 'Star image discovery workflow started',
+
       };
     }
   );
