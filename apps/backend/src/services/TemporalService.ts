@@ -66,8 +66,8 @@ export class TemporalService {
     await client.workflow.start('mediaCleanupWorkflow', {
       taskQueue,
       workflowId,
-      workflowExecutionTimeout: '4h',
-      workflowRunTimeout: '4h',
+      workflowExecutionTimeout: '12h',
+      workflowRunTimeout: '12h',
     });
 
     return workflowId;
