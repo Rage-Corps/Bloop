@@ -115,15 +115,9 @@ The navigation header SHALL include a dropdown menu triggered by the user avatar
 ### Requirement: Settings Page
 The system SHALL provide a dedicated page at `/settings` for administrative tasks and configuration.
 
-#### Scenario: Trigger Full Scrape
+#### ADDED Scenario: Trigger Media Cleanup
 - **GIVEN** the settings page
-- **WHEN** the user clicks the "Full Scrape" button
-- **THEN** the system SHALL trigger the `scrapingWorkflow`
-- **AND** a confirmation toast SHALL be displayed
-
-#### Scenario: Trigger Star Image Discovery
-- **GIVEN** the settings page
-- **WHEN** the user clicks the "Discover Images" button
-- **THEN** the system SHALL trigger the `starImageDiscoveryWorkflow`
+- **WHEN** the user clicks the "Cleanup Media Sources" button
+- **THEN** the system SHALL trigger the `mediaCleanupWorkflow`
 - **AND** a confirmation toast SHALL be displayed
 

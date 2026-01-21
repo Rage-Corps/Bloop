@@ -48,11 +48,10 @@ export default async function castRoutes(fastify: FastifyInstance) {
         limit?: number;
         offset?: number;
       };
-      const filter = {
-        name: name !== undefined ? name : undefined,
-        limit: limit !== undefined ? Number(limit) : undefined,
-        offset: offset !== undefined ? Number(offset) : undefined,
-      };
+      const filter: Parameters<typeof castDao.getAllCastMembers>[0] = {};
+      if (name !== undefined) filter.name = name;
+      if (limit !== undefined) filter.limit = Number(limit);
+      if (offset !== undefined) filter.offset = Number(offset);
       const result = await castDao.getAllCastMembers(filter);
       return {
         data: result.data.map((c) => ({
