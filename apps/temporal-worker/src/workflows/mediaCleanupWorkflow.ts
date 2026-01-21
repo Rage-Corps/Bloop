@@ -1,7 +1,7 @@
 import { proxyActivities, sleep } from '@temporalio/workflow';
 import type * as activities from '../activities/mediaCleanup';
 
-const { getMediaSources, validateMediaSource, deleteMediaSource } = proxyActivities<typeof activities>({
+const { getMediaSourcesPaginated, validateMediaSource, deleteMediaSource } = proxyActivities<typeof activities>({
   startToCloseTimeout: '10 minutes',
   retry: {
     initialInterval: '1s',
@@ -11,51 +11,74 @@ const { getMediaSources, validateMediaSource, deleteMediaSource } = proxyActivit
   },
 });
 
+const PAGE_SIZE = 100;
 const BATCH_SIZE = 10;
 
 export async function mediaCleanupWorkflow(): Promise<{ totalProcessed: number; brokenSources: number; mediaDeleted: number }> {
   console.log('🧹 Starting Media Cleanup Workflow');
 
-  const sources = await getMediaSources();
-  console.log(`📊 Found ${sources.length} sources to validate`);
-
+  let offset = 0;
   let brokenSourcesCount = 0;
   let mediaDeletedCount = 0;
 
-  for (let i = 0; i < sources.length; i += BATCH_SIZE) {
-    const batch = sources.slice(i, i + BATCH_SIZE);
-    console.log(`📦 Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(sources.length / BATCH_SIZE)} (${batch.length} sources)`);
+  // Fetch first page to get total count
+  let page = await getMediaSourcesPaginated({ limit: PAGE_SIZE, offset: 0 });
+  const totalSources = page.total;
+  const totalPages = Math.ceil(totalSources / PAGE_SIZE);
 
-    // Validate batch in parallel
-    const results = await Promise.allSettled(
-      batch.map(source => validateMediaSource(source.url))
-    );
+  console.log(`📊 Found ${totalSources} sources to validate (${totalPages} pages)`);
 
-    // Process results
-    for (let j = 0; j < results.length; j++) {
-      const result = results[j];
-      const source = batch[j];
+  while (offset < totalSources) {
+    if (offset > 0) {
+      page = await getMediaSourcesPaginated({ limit: PAGE_SIZE, offset });
+    }
 
-      if (result.status === 'fulfilled') {
-        const isValid = result.value;
-        console.log(`✅ Source validated: ${source.url} - ${isValid ? '✅' : '❌'}`);
+    const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
+    console.log(`📄 Processing page ${currentPage}/${totalPages} (${page.data.length} sources)`);
 
-        if (!isValid) {
-          console.log(`❌ Source broken: ${source.url}`);
-          const deleteResult = await deleteMediaSource(source.id, source.mediaId);
-          brokenSourcesCount++;
-          if (deleteResult.mediaDeleted) {
-            mediaDeletedCount++;
+    // Process this page in batches for parallel validation
+    for (let i = 0; i < page.data.length; i += BATCH_SIZE) {
+      const batch = page.data.slice(i, i + BATCH_SIZE);
+      console.log(`📦 Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(page.data.length / BATCH_SIZE)} (${batch.length} sources)`);
+
+      // Validate batch in parallel
+      const results = await Promise.allSettled(
+        batch.map(source => validateMediaSource(source.url))
+      );
+
+      // Process results
+      for (let j = 0; j < results.length; j++) {
+        const result = results[j];
+        const source = batch[j];
+
+        if (result.status === 'fulfilled') {
+          const isValid = result.value;
+          console.log(`✅ Source validated: ${source.url} - ${isValid ? '✅' : '❌'}`);
+
+          if (!isValid) {
+            console.log(`❌ Source broken: ${source.url}`);
+            const deleteResult = await deleteMediaSource(source.id, source.mediaId);
+            brokenSourcesCount++;
+            if (deleteResult.mediaDeleted) {
+              mediaDeletedCount++;
+            }
           }
+        } else {
+          console.error(`⚠️ Failed to validate source ${source.url} after retries:`, result.reason);
+          // We skip if it permanently fails validation after retries
         }
-      } else {
-        console.error(`⚠️ Failed to validate source ${source.url} after retries:`, result.reason);
-        // We skip if it permanently fails validation after retries
+      }
+
+      // Rate limiting between batches
+      if (i + BATCH_SIZE < page.data.length) {
+        await sleep('500ms');
       }
     }
 
-    // Rate limiting between batches
-    if (i + BATCH_SIZE < sources.length) {
+    offset += PAGE_SIZE;
+
+    // Rate limiting between pages
+    if (offset < totalSources) {
       await sleep('500ms');
     }
   }
@@ -64,7 +87,7 @@ export async function mediaCleanupWorkflow(): Promise<{ totalProcessed: number; 
   console.log(`📊 Results: ${brokenSourcesCount} broken sources removed, ${mediaDeletedCount} orphaned media deleted`);
 
   return {
-    totalProcessed: sources.length,
+    totalProcessed: totalSources,
     brokenSources: brokenSourcesCount,
     mediaDeleted: mediaDeletedCount,
   };

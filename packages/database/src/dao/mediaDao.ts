@@ -358,10 +358,17 @@ export class MediaDao {
       return false;
     }
 
-    // Delete sources, categories, and cast (cascade should handle this, but being explicit)
+    // Get cast member IDs before unlinking so we can check for orphans
+    const castMembers = await this.castDao.getCastByMediaId(id);
+    const castMemberIds = castMembers.map((c) => c.id);
+
+    // Delete sources, categories, and cast links
     await db.delete(sources).where(eq(sources.mediaId, id));
     await db.delete(categories).where(eq(categories.mediaId, id));
     await this.castDao.unlinkCastFromMedia(id);
+
+    // Delete cast members that no longer have any media associations
+    await this.castDao.deleteOrphanedCastMembers(castMemberIds);
 
     // Delete media
     await db.delete(media).where(eq(media.id, id));

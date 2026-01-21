@@ -209,4 +209,26 @@ export class CastDao {
       .from(castMembers)
       .where(isNull(castMembers.imageUrl));
   }
+
+  async deleteOrphanedCastMembers(castMemberIds: string[]): Promise<number> {
+    if (castMemberIds.length === 0) {
+      return 0;
+    }
+
+    // Find which of these cast members have no media associations
+    const castWithMedia = await db
+      .select({ castMemberId: mediaCast.castMemberId })
+      .from(mediaCast)
+      .where(inArray(mediaCast.castMemberId, castMemberIds));
+
+    const castIdsWithMedia = new Set(castWithMedia.map((c) => c.castMemberId));
+    const orphanedIds = castMemberIds.filter((id) => !castIdsWithMedia.has(id));
+
+    if (orphanedIds.length === 0) {
+      return 0;
+    }
+
+    await db.delete(castMembers).where(inArray(castMembers.id, orphanedIds));
+    return orphanedIds.length;
+  }
 }

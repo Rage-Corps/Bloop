@@ -6,6 +6,11 @@ export async function getMediaSources() {
   return await sourceDao.getAllSources();
 }
 
+export async function getMediaSourcesPaginated(options: { limit?: number; offset?: number } = {}) {
+  const sourceDao = new SourceDao();
+  return await sourceDao.getSourcesPaginated(options);
+}
+
 /**
  * Validates a media source.
  * Returns true if the source is valid, false if it's broken.
