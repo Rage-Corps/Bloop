@@ -57,6 +57,21 @@ export class TemporalService {
     return workflowId;
   }
 
+  async triggerMediaCleanup() {
+    const client = await this.getClient();
+    const taskQueue = process.env.TASK_QUEUE || 'bloop-tasks';
+    const workflowId = `media-cleanup-${Date.now()}`;
+
+    await client.workflow.start('mediaCleanupWorkflow', {
+      taskQueue,
+      workflowId,
+      workflowExecutionTimeout: '4h',
+      workflowRunTimeout: '4h',
+    });
+
+    return workflowId;
+  }
+
   async listScrapingWorkflows() {
     const client = await this.getClient();
     const workflows = [];

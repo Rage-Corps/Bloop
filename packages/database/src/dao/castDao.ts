@@ -1,6 +1,6 @@
 import { db } from '../connection';
 import { castMembers, mediaCast } from '../schema';
-import { eq, ilike, inArray, isNull, sql } from 'drizzle-orm';
+import { eq, ilike, inArray, isNull, sql, asc } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
 export interface CastMember {
@@ -143,26 +143,43 @@ export class CastDao {
     );
   }
 
-  async getAllCastMembers(filter?: { name?: string }): Promise<{ data: CastMember[], total: number }> {
-    let query = db.select().from(castMembers);
+  async getAllCastMembers(filter?: {
+    name?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ data: CastMember[], total: number, limit: number, offset: number }> {
+    const limit = filter?.limit ?? 20;
+    const offset = filter?.offset ?? 0;
+
+    let baseQuery = db.select().from(castMembers);
     let countQuery = db.select({ count: sql<number>`count(*)` }).from(castMembers);
 
     if (filter?.name) {
       const nameFilter = ilike(castMembers.name, `%${filter.name}%`);
       // @ts-ignore
-      query = query.where(nameFilter);
+      baseQuery = baseQuery.where(nameFilter);
       // @ts-ignore
       countQuery = countQuery.where(nameFilter);
     }
 
-    const [data, countResult] = await Promise.all([
-      query,
-      countQuery
-    ]);
+    // Get total count
+    const countResult = await countQuery;
+    const total = Number(countResult[0].count);
+
+    // Apply sorting: images first (IS NULL = false comes before true), then alphabetically by name
+    const data = await baseQuery
+      .orderBy(
+        asc(sql`(${castMembers.imageUrl} IS NULL)`),
+        asc(castMembers.name)
+      )
+      .limit(limit)
+      .offset(offset);
 
     return {
       data,
-      total: Number(countResult[0].count)
+      total,
+      limit,
+      offset
     };
   }
 

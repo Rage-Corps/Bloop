@@ -54,6 +54,8 @@ export interface MediaListResponse {
 export interface CastListResponse {
   data: CastMember[];
   total: number;
+  limit: number;
+  offset: number;
 }
 
 // Query parameters for media API

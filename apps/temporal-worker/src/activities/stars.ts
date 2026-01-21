@@ -36,12 +36,7 @@ export async function findStarImage(name: string): Promise<string | null> {
     }
   }
 
-  // All retries failed due to errors (e.g., network issues, timeouts).
-  // Use a placeholder service to ensure the UI looks okay and data exists.
-  console.warn(`⚠️ All retries failed for ${name}. Returning fallback image.`);
-  const imageUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=512&background=random`;
-
-  return imageUrl;
+  return null;
 }
 
 export async function updateStarImage(params: { id: string; imageUrl: string }): Promise<void> {

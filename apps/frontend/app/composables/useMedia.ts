@@ -82,11 +82,23 @@ export const useMedia = () => {
     }
   };
 
+  const cleanupMediaSources = async () => {
+    try {
+      await $fetch(`${config.public.backendUrl}/api/media/cleanup`, {
+        method: 'POST',
+      });
+    } catch (err: any) {
+      error.value = err.message || 'Failed to trigger media cleanup';
+      throw err;
+    }
+  };
+
   return {
     loading: readonly(loading),
     error: readonly(error),
     fetchMedia,
     fetchMediaById,
     triggerFullScrape,
+    cleanupMediaSources,
   };
 };

@@ -5,7 +5,11 @@ export const useCastMembers = () => {
   const loading = ref(false);
   const error = ref<string | null>(null);
 
-  const fetchCastMembers = async (query?: { name?: string }): Promise<CastListResponse> => {
+  const fetchCastMembers = async (query?: {
+    name?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<CastListResponse> => {
     loading.value = true;
     error.value = null;
 
@@ -13,7 +17,11 @@ export const useCastMembers = () => {
       const response = await $fetch<CastListResponse>(
         `${config.public.backendUrl}/api/cast`,
         {
-          params: query,
+          params: {
+            name: query?.name,
+            limit: query?.limit,
+            offset: query?.offset,
+          },
         }
       );
       return response;

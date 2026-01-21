@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { MediaDao } from '@bloop/database';
 import type { MediaQuery } from '@bloop/shared-types';
+import { temporalService } from '../services/TemporalService';
 
 const mediaDao = new MediaDao();
 
@@ -435,6 +436,34 @@ export default async function mediaRoutes(fastify: FastifyInstance) {
 
       reply.code(201);
       return newCategory;
+    }
+  );
+
+  fastify.post(
+    '/media/cleanup',
+    {
+      schema: {
+        description: 'Trigger a media source cleanup workflow',
+        tags: ['media'],
+        response: {
+          202: {
+            type: 'object',
+            properties: {
+              message: { type: 'string' },
+              workflowId: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (_request, reply) => {
+      const workflowId = await temporalService.triggerMediaCleanup();
+
+      reply.code(202);
+      return {
+        message: 'Media cleanup workflow triggered',
+        workflowId,
+      };
     }
   );
 }

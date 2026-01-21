@@ -4,3 +4,4 @@ export { scheduledScrapingWorkflow } from './scheduledScrapingWorkflow';
 export { pageScrapeWorkflow } from './pageScrapeWorkflow';
 export { mediaScrapeWorkflow } from './mediaScrapeWorkflow';
 export { starImageDiscoveryWorkflow } from './starImageDiscoveryWorkflow';
+export { mediaCleanupWorkflow } from './mediaCleanupWorkflow';

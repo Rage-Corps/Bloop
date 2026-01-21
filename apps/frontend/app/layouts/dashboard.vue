@@ -41,37 +41,31 @@
           <!-- User Menu -->
           <div class="flex items-center space-x-4">
             <ClientOnly>
-              <UDropdown
-                :items="userMenuItems"
-                :popper="{ placement: 'bottom-end' }"
-                class="relative inline-flex"
-              >
-                <div class="flex items-center space-x-3 cursor-pointer">
-                  <UAvatar
-                    :alt="user?.name || user?.email || 'User'"
-                    size="sm"
-                    :ui="{ icon: 'bg-primary-500' }"
-                  >
-                    {{ getUserInitials() }}
-                  </UAvatar>
-                  <div class="hidden sm:block text-sm text-left">
-                    <p class="font-medium text-white truncate max-w-[120px]">
-                      {{ user?.name || 'User' }}
-                    </p>
-                    <p class="text-gray-500 truncate max-w-[120px]">
-                      {{ user?.email }}
-                    </p>
-                  </div>
+              <div class="flex items-center space-x-3">
+                <UAvatar
+                  :alt="user?.name || user?.email || 'User'"
+                  size="sm"
+                  :ui="{ icon: 'bg-primary-500' }"
+                >
+                  {{ getUserInitials() }}
+                </UAvatar>
+                <div class="hidden sm:block text-sm text-left">
+                  <p class="font-medium text-white truncate max-w-[120px]">
+                    {{ user?.name || 'User' }}
+                  </p>
+                  <p class="text-gray-500 truncate max-w-[120px]">
+                    {{ user?.email }}
+                  </p>
                 </div>
-
-                <template #item="{ item }">
-                  <span class="truncate">{{ item.label }}</span>
-                  <UIcon
-                    :name="item.icon"
-                    class="flex-shrink-0 h-4 w-4 text-gray-400 ms-auto"
+                <UDropdownMenu :items="userMenuItems">
+                  <UButton
+                    icon="i-heroicons-bars-3"
+                    color="neutral"
+                    variant="ghost"
+                    aria-label="User menu"
                   />
-                </template>
-              </UDropdown>
+                </UDropdownMenu>
+              </div>
               <template #fallback>
                 <div class="hidden sm:flex items-center space-x-3">
                   <div class="w-8 h-8 bg-gray-700 rounded-full animate-pulse"></div>
@@ -122,21 +116,17 @@ const userMenuItems = computed(() => [
       icon: 'i-heroicons-user-circle',
       disabled: true,
     },
-  ],
-  [
     {
       label: 'Settings',
       icon: 'i-heroicons-cog-6-tooth',
-      click: () => {
+      onSelect: () => {
         navigateTo('/settings');
       },
     },
-  ],
-  [
     {
       label: 'Sign out',
       icon: 'i-heroicons-arrow-right-on-rectangle',
-      click: handleLogout,
+      onSelect: handleLogout,
     },
   ],
 ]);

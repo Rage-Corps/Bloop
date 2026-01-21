@@ -9,12 +9,14 @@ export default async function castRoutes(fastify: FastifyInstance) {
     '/cast',
     {
       schema: {
-        description: 'Get unique list of all cast members',
+        description: 'Get unique list of all cast members with pagination',
         tags: ['cast'],
         querystring: {
           type: 'object',
           properties: {
             name: { type: 'string' },
+            limit: { type: 'number', default: 20 },
+            offset: { type: 'number', default: 0 },
           },
         },
         response: {
@@ -33,22 +35,34 @@ export default async function castRoutes(fastify: FastifyInstance) {
                 },
               },
               total: { type: 'number' },
+              limit: { type: 'number' },
+              offset: { type: 'number' },
             },
           },
         },
       },
     },
     async (request, _reply) => {
-      const { name } = request.query as { name?: string };
-      const filter = name !== undefined ? { name } : undefined;
-      const { data, total } = await castDao.getAllCastMembers(filter);
+      const { name, limit, offset } = request.query as {
+        name?: string;
+        limit?: number;
+        offset?: number;
+      };
+      const filter = {
+        name: name !== undefined ? name : undefined,
+        limit: limit !== undefined ? Number(limit) : undefined,
+        offset: offset !== undefined ? Number(offset) : undefined,
+      };
+      const result = await castDao.getAllCastMembers(filter);
       return {
-        data: data.map((c) => ({
+        data: result.data.map((c) => ({
           id: c.id,
           name: c.name,
           imageUrl: c.imageUrl,
         })),
-        total,
+        total: result.total,
+        limit: result.limit,
+        offset: result.offset,
       };
     }
   );

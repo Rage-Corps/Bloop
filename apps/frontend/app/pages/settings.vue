@@ -51,6 +51,29 @@
           />
         </div>
       </UCard>
+
+      <!-- Media Cleanup Section -->
+      <UCard>
+        <template #header>
+          <div class="flex items-center gap-2">
+            <UIcon name="i-heroicons-trash" class="w-5 h-5 text-primary" />
+            <h2 class="font-bold text-white">Media Source Cleanup</h2>
+          </div>
+        </template>
+        <p class="text-sm text-gray-400 mb-4">
+          Validates all media sources in the database and removes broken links. 
+          Orphaned media items with no remaining sources will also be deleted.
+        </p>
+        <div class="flex items-center gap-4">
+          <UButton
+            icon="i-heroicons-play"
+            label="Cleanup Media Sources"
+            color="primary"
+            :loading="cleanupLoading"
+            @click="onStartMediaCleanup"
+          />
+        </div>
+      </UCard>
     </div>
   </div>
 </template>
@@ -60,12 +83,13 @@ definePageMeta({
   layout: 'dashboard'
 });
 
-const { triggerFullScrape } = useMedia();
+const { triggerFullScrape, cleanupMediaSources } = useMedia();
 const { discoverImages } = useCastMembers();
 const toast = useToast();
 
 const scrapingLoading = ref(false);
 const discoveryLoading = ref(false);
+const cleanupLoading = ref(false);
 
 const onStartFullScrape = async () => {
   scrapingLoading.value = true;
@@ -77,33 +101,54 @@ const onStartFullScrape = async () => {
       color: 'primary'
     });
   } catch (err: any) {
-    toast.add({
-      title: 'Failed to Start Scrape',
-      description: err.message || 'An error occurred while starting the scrape.',
-      color: 'red'
-    });
-  } finally {
-    scrapingLoading.value = false;
-  }
-};
+      toast.add({
+        title: 'Failed to Start Scrape',
+        description: err.message || 'An error occurred while starting the scrape.',
+        color: 'error'
+      });
+    } finally {
+      scrapingLoading.value = false;
+    }
+  };
+  
+  const onStartImageDiscovery = async () => {
+    discoveryLoading.value = true;
+    try {
+      await discoverImages();
+      toast.add({
+        title: 'Discovery Started',
+        description: 'The star image discovery workflow has been triggered successfully.',
+        color: 'primary'
+      });
+    } catch (err: any) {
+      toast.add({
+        title: 'Failed to Start Discovery',
+        description: err.message || 'An error occurred while starting the image discovery.',
+        color: 'error'
+      });
+    } finally {
+      discoveryLoading.value = false;
+    }
+  };
+  
+  const onStartMediaCleanup = async () => {
+    cleanupLoading.value = true;
+    try {
+      await cleanupMediaSources();
+      toast.add({
+        title: 'Cleanup Started',
+        description: 'The media source cleanup workflow has been triggered successfully.',
+        color: 'primary'
+      });
+    } catch (err: any) {
+      toast.add({
+        title: 'Failed to Start Cleanup',
+        description: err.message || 'An error occurred while starting the media cleanup.',
+        color: 'error'
+      });
+    } finally {
+      cleanupLoading.value = false;
+    }
+  };
 
-const onStartImageDiscovery = async () => {
-  discoveryLoading.value = true;
-  try {
-    await discoverImages();
-    toast.add({
-      title: 'Discovery Started',
-      description: 'The star image discovery workflow has been triggered successfully.',
-      color: 'primary'
-    });
-  } catch (err: any) {
-    toast.add({
-      title: 'Failed to Start Discovery',
-      description: err.message || 'An error occurred while starting the image discovery.',
-      color: 'red'
-    });
-  } finally {
-    discoveryLoading.value = false;
-  }
-};
 </script>
