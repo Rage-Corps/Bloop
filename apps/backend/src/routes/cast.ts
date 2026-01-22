@@ -17,6 +17,8 @@ export default async function castRoutes(fastify: FastifyInstance) {
             name: { type: 'string' },
             limit: { type: 'number', default: 20 },
             offset: { type: 'number', default: 0 },
+            orderBy: { type: 'string', enum: ['name_asc', 'name_desc', 'mediaCount_asc', 'mediaCount_desc'] },
+            hasImage: { type: 'boolean' },
           },
         },
         response: {
@@ -31,6 +33,7 @@ export default async function castRoutes(fastify: FastifyInstance) {
                     id: { type: 'string' },
                     name: { type: 'string' },
                     imageUrl: { type: 'string', nullable: true },
+                    mediaCount: { type: 'number' },
                   },
                 },
               },
@@ -43,21 +46,26 @@ export default async function castRoutes(fastify: FastifyInstance) {
       },
     },
     async (request, _reply) => {
-      const { name, limit, offset } = request.query as {
+      const { name, limit, offset, orderBy, hasImage } = request.query as {
         name?: string;
         limit?: number;
         offset?: number;
+        orderBy?: 'name_asc' | 'name_desc' | 'mediaCount_asc' | 'mediaCount_desc';
+        hasImage?: boolean;
       };
       const filter: Parameters<typeof castDao.getAllCastMembers>[0] = {};
       if (name !== undefined) filter.name = name;
       if (limit !== undefined) filter.limit = Number(limit);
       if (offset !== undefined) filter.offset = Number(offset);
+      if (orderBy !== undefined) filter.orderBy = orderBy;
+      if (hasImage !== undefined) filter.hasImage = hasImage;
       const result = await castDao.getAllCastMembers(filter);
       return {
         data: result.data.map((c) => ({
           id: c.id,
           name: c.name,
           imageUrl: c.imageUrl,
+          mediaCount: c.mediaCount ?? 0,
         })),
         total: result.total,
         limit: result.limit,

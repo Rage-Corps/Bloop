@@ -17,6 +17,7 @@ export interface CastMember {
   name: string;
   imageUrl?: string | null;
   createdAt: string | null;
+  mediaCount?: number;
 }
 
 // Source type from database schema
@@ -67,6 +68,15 @@ export interface MediaQuery {
   sources?: string[];
   cast?: string[];
   excludedCategories?: string[];
+}
+
+// Query parameters for cast API
+export interface FetchCastMembersOptions {
+  limit?: number;
+  offset?: number;
+  name?: string;
+  orderBy?: 'name_asc' | 'name_desc' | 'mediaCount_asc' | 'mediaCount_desc';
+  hasImage?: boolean;
 }
 
 // Create media input
@@ -125,6 +135,8 @@ export interface UserPreferences {
   excludedCategories?: string[];
   preferredSource?: string;
   itemsPerPage?: number;
+  starsOrderBy?: 'name_asc' | 'name_desc' | 'mediaCount_asc' | 'mediaCount_desc';
+  starsHasImage?: boolean;
 }
 
 export interface UserConfig {

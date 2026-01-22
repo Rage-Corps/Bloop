@@ -1,15 +1,11 @@
-import type { CastMember, CastListResponse } from '@bloop/shared-types';
+import type { CastMember, CastListResponse, FetchCastMembersOptions } from '@bloop/shared-types';
 
 export const useCastMembers = () => {
   const config = useRuntimeConfig();
   const loading = ref(false);
   const error = ref<string | null>(null);
 
-  const fetchCastMembers = async (query?: {
-    name?: string;
-    limit?: number;
-    offset?: number;
-  }): Promise<CastListResponse> => {
+  const fetchCastMembers = async (query?: FetchCastMembersOptions): Promise<CastListResponse> => {
     loading.value = true;
     error.value = null;
 
@@ -21,6 +17,8 @@ export const useCastMembers = () => {
             name: query?.name,
             limit: query?.limit,
             offset: query?.offset,
+            orderBy: query?.orderBy,
+            hasImage: query?.hasImage,
           },
         }
       );

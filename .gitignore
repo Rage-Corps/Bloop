@@ -14,6 +14,7 @@ dist/
 apps/*/dist/
 packages/*/dist/
 dist-temp/
+dist.*
 
 .env
 .env.*

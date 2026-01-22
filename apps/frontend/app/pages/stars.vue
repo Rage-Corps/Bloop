@@ -4,7 +4,7 @@
       <div>
         <h1 class="text-2xl font-bold text-white flex items-center gap-3">
           Stars
-          <UBadge v-if="total !== null" color="gray" variant="soft" size="sm">
+          <UBadge v-if="total !== null" color="neutral" variant="soft" size="sm">
             {{ total }}
           </UBadge>
         </h1>
@@ -17,6 +17,19 @@
           placeholder="Search stars..."
           class="w-full md:w-64"
           @update:model-value="onSearch"
+        />
+        <USelect
+          v-model="orderBy"
+          :items="orderByOptions"
+          class="w-40"
+          @update:model-value="onOrderByChange"
+          value-attribute="value"
+          option-attribute="label"
+        />
+        <UCheckbox
+          v-model="hasImage"
+          label="With images"
+          @update:model-value="onHasImageChange"
         />
         <USelect
           v-model="itemsPerPage"
@@ -35,7 +48,7 @@
 
     <UAlert
       v-if="error"
-      color="red"
+      color="error"
       variant="soft"
       icon="i-heroicons-exclamation-triangle"
       :title="error"
@@ -94,6 +107,16 @@ const stars = ref<CastMember[]>([]);
 const total = ref<number | null>(null);
 const searchQuery = ref('');
 const itemsPerPage = ref(20);
+const orderBy = ref<'name_asc' | 'name_desc' | 'mediaCount_asc' | 'mediaCount_desc'>('name_asc');
+const hasImage = ref(false);
+
+// Sort options
+const orderByOptions = [
+  { label: 'Name A-Z', value: 'name_asc' },
+  { label: 'Name Z-A', value: 'name_desc' },
+  { label: 'Most Media', value: 'mediaCount_desc' },
+  { label: 'Least Media', value: 'mediaCount_asc' },
+];
 
 // Items per page options (same as dashboard)
 const itemsPerPageOptions = [
@@ -109,12 +132,18 @@ const itemsPerPageOptions = [
 const currentPage = computed(() => parseInt(route.query.page as string) || 1);
 const offset = computed(() => (currentPage.value - 1) * itemsPerPage.value);
 
-// Load user preferences for items per page
+// Load user preferences for items per page, sort order, and filter
 const loadUserPreferences = async () => {
   try {
     const userConfig = await getUserConfig();
     if (userConfig?.preferences?.itemsPerPage) {
       itemsPerPage.value = userConfig.preferences.itemsPerPage;
+    }
+    if (userConfig?.preferences?.starsOrderBy) {
+      orderBy.value = userConfig.preferences.starsOrderBy;
+    }
+    if (userConfig?.preferences?.starsHasImage !== undefined) {
+      hasImage.value = userConfig.preferences.starsHasImage;
     }
   } catch (err) {
     console.warn('Failed to load user preferences:', err);
@@ -128,6 +157,8 @@ const loadStars = async () => {
       name: searchQuery.value || undefined,
       limit,
       offset: offset.value,
+      orderBy: orderBy.value,
+      hasImage: hasImage.value || undefined,
     });
     stars.value = response.data;
     total.value = response.total;
@@ -146,6 +177,19 @@ const onSearch = useDebounceFn(() => {
     },
   });
 }, 300);
+
+const onOrderByChange = (value: string) => {
+  if (['name_asc', 'name_desc', 'mediaCount_asc', 'mediaCount_desc'].includes(value)) {
+    orderBy.value = value as 'name_asc' | 'name_desc' | 'mediaCount_asc' | 'mediaCount_desc';
+    patchUserConfig({ starsOrderBy: value as 'name_asc' | 'name_desc' | 'mediaCount_asc' | 'mediaCount_desc' });
+    loadStars();
+  }
+};
+
+const onHasImageChange = () => {
+  patchUserConfig({ starsHasImage: hasImage.value });
+  loadStars();
+};
 
 const onItemsPerPageChange = async (value: number) => {
   // Update the ref explicitly (v-model should handle this, but ensure it)
@@ -208,7 +252,7 @@ watch(
 );
 
 watch(
-  [() => route.query.page, () => route.query.q, itemsPerPage],
+  [() => route.query.page, () => route.query.q, itemsPerPage, orderBy, hasImage],
   () => {
     loadStars();
     window.scrollTo({ top: 0, behavior: 'smooth' });

@@ -1,6 +1,6 @@
 import { db } from '../connection';
 import { castMembers, mediaCast } from '../schema';
-import { eq, ilike, inArray, isNull, sql, asc } from 'drizzle-orm';
+import { eq, ilike, inArray, isNull, sql, asc, desc, and } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 
 export interface CastMember {
@@ -8,6 +8,7 @@ export interface CastMember {
   name: string;
   imageUrl: string | null;
   createdAt: Date | null;
+  mediaCount?: number;
 }
 
 export class CastDao {
@@ -147,31 +148,66 @@ export class CastDao {
     name?: string;
     limit?: number;
     offset?: number;
+    orderBy?: 'name_asc' | 'name_desc' | 'mediaCount_asc' | 'mediaCount_desc';
+    hasImage?: boolean;
   }): Promise<{ data: CastMember[], total: number, limit: number, offset: number }> {
     const limit = filter?.limit ?? 20;
     const offset = filter?.offset ?? 0;
 
-    let baseQuery = db.select().from(castMembers);
+    let baseQuery = db.select({
+      id: castMembers.id,
+      name: castMembers.name,
+      imageUrl: castMembers.imageUrl,
+      createdAt: castMembers.createdAt,
+      mediaCount: sql<number>`COALESCE(COUNT(${mediaCast.castMemberId}), 0)`.as('mediaCount')
+    })
+    .from(castMembers)
+    .leftJoin(mediaCast, eq(castMembers.id, mediaCast.castMemberId))
+    .groupBy(castMembers.id, castMembers.name, castMembers.imageUrl, castMembers.createdAt);
+
     let countQuery = db.select({ count: sql<number>`count(*)` }).from(castMembers);
 
+    const conditions = [];
+
     if (filter?.name) {
-      const nameFilter = ilike(castMembers.name, `%${filter.name}%`);
-      // @ts-ignore
-      baseQuery = baseQuery.where(nameFilter);
-      // @ts-ignore
-      countQuery = countQuery.where(nameFilter);
+      conditions.push(ilike(castMembers.name, `%${filter.name}%`));
     }
 
-    // Get total count
+    if (filter?.hasImage) {
+      conditions.push(sql`${castMembers.imageUrl} IS NOT NULL`);
+    }
+
+    if (conditions.length > 0) {
+      const whereCondition = and(...conditions);
+      baseQuery = baseQuery.where(whereCondition) as any;
+      countQuery = countQuery.where(whereCondition) as any;
+    }
+
+    const orderBy = filter?.orderBy ?? 'name_asc';
+    let orderByClause;
+
+    switch (orderBy) {
+      case 'name_asc':
+        orderByClause = asc(castMembers.name);
+        break;
+      case 'name_desc':
+        orderByClause = desc(castMembers.name);
+        break;
+      case 'mediaCount_asc':
+        orderByClause = asc(sql`COALESCE(COUNT(${mediaCast.castMemberId}), 0)`);
+        break;
+      case 'mediaCount_desc':
+        orderByClause = desc(sql`COALESCE(COUNT(${mediaCast.castMemberId}), 0)`);
+        break;
+      default:
+        orderByClause = asc(castMembers.name);
+    }
+
     const countResult = await countQuery;
     const total = Number(countResult[0].count);
 
-    // Apply sorting: images first (IS NULL = false comes before true), then alphabetically by name
     const data = await baseQuery
-      .orderBy(
-        asc(sql`(${castMembers.imageUrl} IS NULL)`),
-        asc(castMembers.name)
-      )
+      .orderBy(orderByClause)
       .limit(limit)
       .offset(offset);
 

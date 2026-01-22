@@ -20,9 +20,17 @@
     <!-- Star Info -->
     <div class="space-y-1">
       <h3
-        class="font-semibold text-white text-sm group-hover:text-primary transition-colors"
+        class="font-semibold text-white text-sm group-hover:text-primary transition-colors flex items-center justify-center gap-2"
       >
         {{ item.name }}
+        <UBadge
+          v-if="item.mediaCount && item.mediaCount > 0"
+          color="neutral"
+          variant="soft"
+          size="xs"
+        >
+          {{ item.mediaCount }}
+        </UBadge>
       </h3>
     </div>
   </UCard>
