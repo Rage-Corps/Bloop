@@ -16,3 +16,26 @@ Use `@/openspec/AGENTS.md` to learn:
 Keep this managed block so 'openspec update' can refresh the instructions.
 
 <!-- OPENSPEC:END -->
+
+# Docker Development
+
+All development is done via Docker using the dev compose file.
+
+## Compose Files
+
+- **docker-compose.dev.yml**: Used for development
+- **docker-compose.prod.yml**: Used for production
+
+## Database
+
+The database is shared between dev and prod environments.
+
+## Making Changes
+
+When making changes to the codebase, you must ensure that both compose files build correctly with no broken containers.
+
+Before committing changes, verify both compose files:
+```bash
+docker-compose -f docker-compose.dev.yml build
+docker-compose -f docker-compose.prod.yml build
+```

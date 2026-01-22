@@ -73,7 +73,7 @@ export class MediaDao {
     const filterCast = (query as any).cast;
 
     // Build base query with joins for all potential filters
-    let mediaIdsQuery = db.selectDistinct({ id: media.id }).from(media);
+    let mediaIdsQuery = db.selectDistinct({ id: media.id, dateAdded: media.dateAdded }).from(media);
     const whereConditions: any[] = [];
 
     // For categories: media must have ALL specified categories
@@ -154,6 +154,9 @@ export class MediaDao {
     if (whereConditions.length > 0) {
       mediaIdsQuery = (mediaIdsQuery as any).where(and(...whereConditions));
     }
+
+    // Order by dateAdded descending before pagination
+    mediaIdsQuery = (mediaIdsQuery as any).orderBy(desc(media.dateAdded));
 
     // Log the SQL query for debugging
     const sqlQuery = mediaIdsQuery.toSQL();

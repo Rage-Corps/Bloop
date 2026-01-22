@@ -43,7 +43,7 @@ async function logFetchAttempt(url: string, attempt: number) {
 
 export async function fetchPageHTML(url: string): Promise<string> {
   const maxRetries = 3;
-  const backoffMs = 30000;
+  const backoffMs = 10000;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -69,7 +69,7 @@ export async function fetchPageHTML(url: string): Promise<string> {
           (error as any).response?.status === 403);
 
       if (is403 && attempt < maxRetries) {
-        console.warn(`⚠️ Received 403 for ${url}. Waiting 30s for proxy rotation...`);
+        console.warn(`⚠️ Received 403 for ${url}. Waiting 10s for proxy rotation...`);
         await new Promise((resolve) => setTimeout(resolve, backoffMs));
         continue;
       }
