@@ -28,7 +28,7 @@ export async function validateMediaSource(url: string): Promise<boolean> {
 
     console.log(`${url} - ${response.status}`);
     // Design: A source is considered "broken" if HTTP Response Status is 404 or 503.
-    if (response.status === 404 || response.status === 503 || response.status === 523) {
+    if (response.status === 404 || response.status === 503 || response.status === 523 || response.status === 419) {
       return false;
     }
 
