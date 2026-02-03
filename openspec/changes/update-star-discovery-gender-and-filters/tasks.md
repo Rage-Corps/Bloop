@@ -1,0 +1,23 @@
+# Tasks: Update Star Discovery Gender and Filtering
+
+- [ ] Update Database Schema and DAO
+  - [ ] Add `gender` column to `cast_members` table in `packages/database/src/schema.ts`
+  - [ ] Update `CastMember` interface in `packages/database/src/dao/castDao.ts`
+  - [ ] Update `CastDao.findOrCreateByName` to handle `gender`
+  - [ ] Update `CastDao.getAllCastMembers` to support `gender` filter
+  - [ ] Add `CastDao.updateStarInfo` (or update `updateImageUrl`) to save `gender`
+- [ ] Update Shared Types
+  - [ ] Update `CastMember`, `FetchCastMembersOptions`, and `UserPreferences` in `packages/shared-types/src/index.ts`
+- [ ] Update Scraping Activities and Workflow
+  - [ ] Update `findStarImage` activity in `apps/temporal-worker/src/activities/stars.ts` to return `{ imageUrl, gender }`
+  - [ ] Update `updateStarImage` activity to save `gender`
+  - [ ] Update `starImageDiscoveryWorkflow.ts` to use updated activities
+- [ ] Update Backend API
+  - [ ] Update `GET /api/cast` in `apps/backend/src/routes/cast.ts` to support `gender` filter and return `gender`
+- [ ] Update Frontend
+  - [ ] Update `useCastMembers` composable to support `gender` filter
+  - [ ] Update `stars.vue` to add `Gender` filter (default: female)
+  - [ ] Update `stars.vue` to default `With images` to true
+  - [ ] Update `stars.vue` to persist and load `Gender` preference
+- [ ] Validation
+  - [ ] Run `openspec validate update-star-discovery-gender-and-filters --strict`
