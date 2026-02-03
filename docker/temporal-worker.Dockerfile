@@ -10,6 +10,8 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Copy package.json files for workspace packages
+COPY apps/backend/package.json ./apps/backend/package.json
+COPY apps/frontend/package.json ./apps/frontend/package.json
 COPY apps/temporal-worker/package.json ./apps/temporal-worker/package.json
 COPY packages/shared-types/package.json ./packages/shared-types/package.json
 COPY packages/database/package.json ./packages/database/package.json

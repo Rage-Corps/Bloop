@@ -11,7 +11,12 @@ const pornhub = new PornHub();
 pornhub.setAgent(proxyAgent);
 
 
-export async function findStarImage(name: string): Promise<string | null> {
+export interface StarInfo {
+  imageUrl: string | null;
+  gender: string | null;
+}
+
+export async function findStarImage(name: string): Promise<StarInfo> {
   console.log(`🔍 Searching for image for star: ${name}`);
   const MAX_ATTEMPTS = 5;
   const DELAY_MS = 10000;
@@ -20,13 +25,16 @@ export async function findStarImage(name: string): Promise<string | null> {
     try {
       const searchResult = await pornhub.model(name);
       if (searchResult.name.length) {
-        return searchResult.avatar;
+        return {
+          imageUrl: searchResult.avatar || null,
+          gender: searchResult.gender || null,
+        };
       }
 
       // If we successfully reached the API but it explicitly found nothing, 
       // we stop retrying and return null.
       console.log(`ℹ️ Star not found on source: ${name}`);
-      return null;
+      return { imageUrl: null, gender: null };
     } catch (error) {
       console.error(`Attempt ${attempt}/${MAX_ATTEMPTS} failed for star: ${name}`, error);
       if (attempt < MAX_ATTEMPTS) {
@@ -36,11 +44,11 @@ export async function findStarImage(name: string): Promise<string | null> {
     }
   }
 
-  return null;
+  return { imageUrl: null, gender: null };
 }
 
-export async function updateStarImage(params: { id: string; imageUrl: string }): Promise<void> {
-  await castDao.updateImageUrl(params.id, params.imageUrl);
+export async function updateStarImage(params: { id: string; imageUrl?: string | null; gender?: string | null }): Promise<void> {
+  await castDao.updateStarInfo(params.id, { imageUrl: params.imageUrl, gender: params.gender });
 }
 
 export async function getCastWithoutImages(): Promise<{ id: string, name: string }[]> {

@@ -26,6 +26,14 @@
           value-attribute="value"
           option-attribute="label"
         />
+        <USelect
+          v-model="gender"
+          :items="genderOptions"
+          class="w-36"
+          @update:model-value="onGenderChange"
+          value-attribute="value"
+          option-attribute="label"
+        />
         <UCheckbox
           v-model="hasImage"
           label="With images"
@@ -99,7 +107,7 @@ definePageMeta({
 
 const router = useRouter();
 const route = useRoute();
-const { fetchCastMembers, discoverImages, loading, error } = useCastMembers();
+const { fetchCastMembers, discoverImages, fetchGenders, loading, error } = useCastMembers();
 const { getUserConfig, patchUserConfig } = useUserConfig();
 
 // Reactive data
@@ -108,7 +116,8 @@ const total = ref<number | null>(null);
 const searchQuery = ref('');
 const itemsPerPage = ref(20);
 const orderBy = ref<'name_asc' | 'name_desc' | 'mediaCount_asc' | 'mediaCount_desc'>('name_asc');
-const hasImage = ref(false);
+const hasImage = ref(true);
+const gender = ref<string>('female');
 
 // Sort options
 const orderByOptions = [
@@ -128,6 +137,23 @@ const itemsPerPageOptions = [
   { label: '100 per page', value: 100 },
 ];
 
+// Gender filter options
+const genderOptions = ref<{ label: string, value: string }[]>([
+  { label: 'All Genders', value: 'all' },
+]);
+
+const loadGenders = async () => {
+  const genders = await fetchGenders();
+  const options = genders.map(g => ({
+    label: g.charAt(0).toUpperCase() + g.slice(1),
+    value: g
+  }));
+  genderOptions.value = [
+    { label: 'All Genders', value: 'all' },
+    ...options
+  ];
+};
+
 // Get current page from route query
 const currentPage = computed(() => parseInt(route.query.page as string) || 1);
 const offset = computed(() => (currentPage.value - 1) * itemsPerPage.value);
@@ -145,6 +171,9 @@ const loadUserPreferences = async () => {
     if (userConfig?.preferences?.starsHasImage !== undefined) {
       hasImage.value = userConfig.preferences.starsHasImage;
     }
+    if (userConfig?.preferences?.starsGender !== undefined) {
+      gender.value = userConfig.preferences.starsGender || 'all';
+    }
   } catch (err) {
     console.warn('Failed to load user preferences:', err);
   }
@@ -159,6 +188,7 @@ const loadStars = async () => {
       offset: offset.value,
       orderBy: orderBy.value,
       hasImage: hasImage.value || undefined,
+      gender: gender.value === 'all' ? undefined : gender.value,
     });
     stars.value = response.data;
     total.value = response.total;
@@ -188,6 +218,12 @@ const onOrderByChange = (value: string) => {
 
 const onHasImageChange = () => {
   patchUserConfig({ starsHasImage: hasImage.value });
+  loadStars();
+};
+
+const onGenderChange = (value: string) => {
+  gender.value = value;
+  patchUserConfig({ starsGender: value });
   loadStars();
 };
 
@@ -238,6 +274,7 @@ onMounted(async () => {
     searchQuery.value = route.query.q as string;
   }
 
+  await loadGenders();
   loadStars();
 });
 
@@ -252,7 +289,7 @@ watch(
 );
 
 watch(
-  [() => route.query.page, () => route.query.q, itemsPerPage, orderBy, hasImage],
+  [() => route.query.page, () => route.query.q, itemsPerPage, orderBy, hasImage, gender],
   () => {
     loadStars();
     window.scrollTo({ top: 0, behavior: 'smooth' });

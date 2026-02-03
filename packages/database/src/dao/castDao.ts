@@ -7,22 +7,30 @@ export interface CastMember {
   id: string;
   name: string;
   imageUrl: string | null;
+  gender: string | null;
   createdAt: Date | null;
   mediaCount?: number;
 }
 
 export class CastDao {
-  async findOrCreateByName(name: string, imageUrl?: string | null): Promise<CastMember> {
+  async findOrCreateByName(name: string, options?: { imageUrl?: string | null, gender?: string | null }): Promise<CastMember> {
     const existing = await db
       .select()
       .from(castMembers)
       .where(eq(castMembers.name, name));
 
     if (existing.length > 0) {
-      if (imageUrl && existing[0].imageUrl !== imageUrl) {
+      const updates: { imageUrl?: string | null, gender?: string | null } = {};
+      if (options?.imageUrl && existing[0].imageUrl !== options.imageUrl) {
+        updates.imageUrl = options.imageUrl;
+      }
+      if (options?.gender && existing[0].gender !== options.gender) {
+        updates.gender = options.gender;
+      }
+      if (Object.keys(updates).length > 0) {
         const updated = await db
           .update(castMembers)
-          .set({ imageUrl })
+          .set(updates)
           .where(eq(castMembers.id, existing[0].id))
           .returning();
         return updated[0];
@@ -35,14 +43,15 @@ export class CastDao {
       .values({
         id: randomUUID(),
         name,
-        imageUrl,
+        imageUrl: options?.imageUrl,
+        gender: options?.gender,
       })
       .returning();
 
     return newCastMember[0];
   }
 
-  async findOrCreateMany(cast: (string | { name: string, imageUrl?: string | null })[]): Promise<CastMember[]> {
+  async findOrCreateMany(cast: (string | { name: string, imageUrl?: string | null, gender?: string | null })[]): Promise<CastMember[]> {
     if (cast.length === 0) {
       return [];
     }
@@ -52,7 +61,8 @@ export class CastDao {
     for (const item of cast) {
       const name = typeof item === 'string' ? item : item.name;
       const imageUrl = typeof item === 'string' ? undefined : item.imageUrl;
-      const castMember = await this.findOrCreateByName(name, imageUrl);
+      const gender = typeof item === 'string' ? undefined : item.gender;
+      const castMember = await this.findOrCreateByName(name, { imageUrl, gender });
       results.push(castMember);
     }
 
@@ -65,6 +75,7 @@ export class CastDao {
         id: castMembers.id,
         name: castMembers.name,
         imageUrl: castMembers.imageUrl,
+        gender: castMembers.gender,
         createdAt: castMembers.createdAt,
       })
       .from(mediaCast)
@@ -85,6 +96,7 @@ export class CastDao {
         id: castMembers.id,
         name: castMembers.name,
         imageUrl: castMembers.imageUrl,
+        gender: castMembers.gender,
         createdAt: castMembers.createdAt,
       })
       .from(mediaCast)
@@ -101,6 +113,7 @@ export class CastDao {
         id: relation.id,
         name: relation.name,
         imageUrl: relation.imageUrl,
+        gender: relation.gender,
         createdAt: relation.createdAt,
       });
     }
@@ -150,6 +163,7 @@ export class CastDao {
     offset?: number;
     orderBy?: 'name_asc' | 'name_desc' | 'mediaCount_asc' | 'mediaCount_desc';
     hasImage?: boolean;
+    gender?: string;
   }): Promise<{ data: CastMember[], total: number, limit: number, offset: number }> {
     const limit = filter?.limit ?? 20;
     const offset = filter?.offset ?? 0;
@@ -158,12 +172,13 @@ export class CastDao {
       id: castMembers.id,
       name: castMembers.name,
       imageUrl: castMembers.imageUrl,
+      gender: castMembers.gender,
       createdAt: castMembers.createdAt,
       mediaCount: sql<number>`COALESCE(COUNT(${mediaCast.castMemberId}), 0)`.as('mediaCount')
     })
-    .from(castMembers)
-    .leftJoin(mediaCast, eq(castMembers.id, mediaCast.castMemberId))
-    .groupBy(castMembers.id, castMembers.name, castMembers.imageUrl, castMembers.createdAt);
+      .from(castMembers)
+      .leftJoin(mediaCast, eq(castMembers.id, mediaCast.castMemberId))
+      .groupBy(castMembers.id, castMembers.name, castMembers.imageUrl, castMembers.gender, castMembers.createdAt);
 
     let countQuery = db.select({ count: sql<number>`count(*)` }).from(castMembers);
 
@@ -175,6 +190,10 @@ export class CastDao {
 
     if (filter?.hasImage) {
       conditions.push(sql`${castMembers.imageUrl} IS NOT NULL`);
+    }
+
+    if (filter?.gender && filter.gender !== 'all') {
+      conditions.push(ilike(sql`TRIM(${castMembers.gender})`, filter.gender));
     }
 
     if (conditions.length > 0) {
@@ -239,11 +258,36 @@ export class CastDao {
       .where(eq(castMembers.id, id));
   }
 
+  async updateStarInfo(id: string, info: { imageUrl?: string | null, gender?: string | null }): Promise<void> {
+    const updates: { imageUrl?: string | null, gender?: string | null } = {};
+    if (info.imageUrl !== undefined) {
+      updates.imageUrl = info.imageUrl;
+    }
+    if (info.gender !== undefined) {
+      updates.gender = info.gender;
+    }
+    if (Object.keys(updates).length > 0) {
+      await db
+        .update(castMembers)
+        .set(updates)
+        .where(eq(castMembers.id, id));
+    }
+  }
+
   async getCastWithoutImages(): Promise<CastMember[]> {
     return await db
       .select()
       .from(castMembers)
       .where(isNull(castMembers.imageUrl));
+  }
+
+  async getUniqueGenders(): Promise<string[]> {
+    const result = await db
+      .selectDistinct({ gender: sql<string>`LOWER(TRIM(${castMembers.gender}))` })
+      .from(castMembers)
+      .where(sql`${castMembers.gender} IS NOT NULL`);
+
+    return result.map(r => r.gender as string).filter(Boolean).sort();
   }
 
   async deleteOrphanedCastMembers(castMemberIds: string[]): Promise<number> {

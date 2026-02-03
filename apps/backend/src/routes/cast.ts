@@ -19,6 +19,7 @@ export default async function castRoutes(fastify: FastifyInstance) {
             offset: { type: 'number', default: 0 },
             orderBy: { type: 'string', enum: ['name_asc', 'name_desc', 'mediaCount_asc', 'mediaCount_desc'] },
             hasImage: { type: 'boolean' },
+            gender: { type: 'string' },
           },
         },
         response: {
@@ -33,6 +34,7 @@ export default async function castRoutes(fastify: FastifyInstance) {
                     id: { type: 'string' },
                     name: { type: 'string' },
                     imageUrl: { type: 'string', nullable: true },
+                    gender: { type: 'string', nullable: true },
                     mediaCount: { type: 'number' },
                   },
                 },
@@ -46,12 +48,13 @@ export default async function castRoutes(fastify: FastifyInstance) {
       },
     },
     async (request, _reply) => {
-      const { name, limit, offset, orderBy, hasImage } = request.query as {
+      const { name, limit, offset, orderBy, hasImage, gender } = request.query as {
         name?: string;
         limit?: number;
         offset?: number;
         orderBy?: 'name_asc' | 'name_desc' | 'mediaCount_asc' | 'mediaCount_desc';
         hasImage?: boolean;
+        gender?: string;
       };
       const filter: Parameters<typeof castDao.getAllCastMembers>[0] = {};
       if (name !== undefined) filter.name = name;
@@ -59,18 +62,39 @@ export default async function castRoutes(fastify: FastifyInstance) {
       if (offset !== undefined) filter.offset = Number(offset);
       if (orderBy !== undefined) filter.orderBy = orderBy;
       if (hasImage !== undefined) filter.hasImage = hasImage;
+      if (gender !== undefined) filter.gender = gender;
       const result = await castDao.getAllCastMembers(filter);
       return {
         data: result.data.map((c) => ({
           id: c.id,
           name: c.name,
           imageUrl: c.imageUrl,
+          gender: c.gender,
           mediaCount: c.mediaCount ?? 0,
         })),
         total: result.total,
         limit: result.limit,
         offset: result.offset,
       };
+    }
+  );
+
+  fastify.get(
+    '/cast/genders',
+    {
+      schema: {
+        description: 'Get unique list of genders from cast members',
+        tags: ['cast'],
+        response: {
+          200: {
+            type: 'array',
+            items: { type: 'string' },
+          },
+        },
+      },
+    },
+    async (_request, _reply) => {
+      return await castDao.getUniqueGenders();
     }
   );
 

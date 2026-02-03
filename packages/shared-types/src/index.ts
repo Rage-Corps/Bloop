@@ -16,6 +16,7 @@ export interface CastMember {
   id: string;
   name: string;
   imageUrl?: string | null;
+  gender?: string | null;
   createdAt: string | null;
   mediaCount?: number;
 }
@@ -77,6 +78,7 @@ export interface FetchCastMembersOptions {
   name?: string;
   orderBy?: 'name_asc' | 'name_desc' | 'mediaCount_asc' | 'mediaCount_desc';
   hasImage?: boolean;
+  gender?: string;
 }
 
 // Create media input
@@ -137,6 +139,7 @@ export interface UserPreferences {
   itemsPerPage?: number;
   starsOrderBy?: 'name_asc' | 'name_desc' | 'mediaCount_asc' | 'mediaCount_desc';
   starsHasImage?: boolean;
+  starsGender?: string;
 }
 
 export interface UserConfig {

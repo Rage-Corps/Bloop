@@ -64,6 +64,13 @@
       "when": 1768766182741,
       "tag": "0008_flaky_alice",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1770149536355,
+      "tag": "0009_foamy_mindworm",
+      "breakpoints": true
     }
   ]
 }

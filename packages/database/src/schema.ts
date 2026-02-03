@@ -16,6 +16,7 @@ export const castMembers = pgTable('cast_members', {
   id: text('id').primaryKey(),
   name: text('name').notNull().unique(),
   imageUrl: text('image_url'),
+  gender: text('gender'),
   createdAt: timestamp('created_at').defaultNow()
 })
 

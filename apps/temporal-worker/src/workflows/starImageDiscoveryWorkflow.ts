@@ -33,7 +33,7 @@ export async function starImageDiscoveryWorkflow(input: StarImageDiscoveryInput 
 
   // Process up to BATCHES_PER_RUN batches in this run
   const starsToProcessThisRun = Math.min(BATCH_SIZE * BATCHES_PER_RUN, totalCount - processedCount);
-  
+
   if (starsToProcessThisRun <= 0) {
     return {
       totalProcessed: processedCount,
@@ -42,9 +42,9 @@ export async function starImageDiscoveryWorkflow(input: StarImageDiscoveryInput 
   }
 
   // Fetch only the stars needed for this run
-  const starsThisRun = await getCastMembersPage({ 
-    offset: processedCount, 
-    limit: starsToProcessThisRun 
+  const starsThisRun = await getCastMembersPage({
+    offset: processedCount,
+    limit: starsToProcessThisRun
   });
 
   const endIndex = processedCount + starsThisRun.length;
@@ -64,9 +64,11 @@ export async function starImageDiscoveryWorkflow(input: StarImageDiscoveryInput 
       const result = results[j];
       const star = batch[j];
 
-      if (result.status === 'fulfilled' && result.value) {
-        await updateStarImage({ id: star.id, imageUrl: result.value });
-        imagesUpdated++;
+      if (result.status === 'fulfilled' && (result.value.imageUrl || result.value.gender)) {
+        await updateStarImage({ id: star.id, imageUrl: result.value.imageUrl, gender: result.value.gender });
+        if (result.value.imageUrl) {
+          imagesUpdated++;
+        }
       }
     }
   }

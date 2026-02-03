@@ -156,8 +156,8 @@ export async function mediaScrapeWorkflow(input: MediaScrapingWorkflowInput) {
 
         const existingCast = await getCastByName(name);
         if (!existingCast || !existingCast.imageUrl) {
-          const imageUrl = await findStarImage(name);
-          castWithImages.push({ name, imageUrl });
+          const starInfo = await findStarImage(name);
+          castWithImages.push({ name, imageUrl: starInfo.imageUrl });
         } else {
           castWithImages.push({ name, imageUrl: existingCast.imageUrl });
         }

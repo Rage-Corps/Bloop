@@ -19,6 +19,7 @@ export const useCastMembers = () => {
             offset: query?.offset,
             orderBy: query?.orderBy,
             hasImage: query?.hasImage,
+            gender: query?.gender,
           },
         }
       );
@@ -42,10 +43,20 @@ export const useCastMembers = () => {
     }
   };
 
+  const fetchGenders = async (): Promise<string[]> => {
+    try {
+      return await $fetch<string[]>(`${config.public.backendUrl}/api/cast/genders`);
+    } catch (err: any) {
+      console.error('Failed to fetch genders:', err);
+      return [];
+    }
+  };
+
   return {
     loading: readonly(loading),
     error: readonly(error),
     fetchCastMembers,
     discoverImages,
+    fetchGenders,
   };
 };
