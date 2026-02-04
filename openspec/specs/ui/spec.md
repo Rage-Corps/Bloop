@@ -79,7 +79,8 @@ The navigation header SHALL include a link to the Watchlist page.
 - **THEN** they SHALL be navigated to the `/watchlist` page
 
 ### Requirement: Stars Page
-The system SHALL provide a dedicated page at `/stars` to browse media by cast member.
+
+The system SHALL provide a dedicated page at `/stars` to browse media by cast member with gender filtering support.
 
 #### Scenario: No Discover Images button
 - **GIVEN** the stars page
@@ -92,6 +93,9 @@ The system SHALL provide a dedicated page at `/stars` to browse media by cast me
 - **THEN** it SHALL display a sort dropdown with options for Name (A-Z, Z-A) and Media (Most, Least)
 - **AND** it SHALL display a "Hide stars without images" toggle
 - **AND** each cast member card SHALL show a media count badge
+- **AND** it SHALL include a dropdown or select for "Gender" with options: "All", "Female", "Male", "Transgender"
+- **AND** it SHALL default "Gender" to "Female"
+- **AND** it SHALL default "Hide stars without images" toggle to checked
 
 ### Requirement: Header Link to Stars Page
 The navigation header SHALL include a link to the Stars page.
