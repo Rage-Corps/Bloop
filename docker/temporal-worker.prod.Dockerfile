@@ -19,6 +19,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/temporal-worker/package.json ./apps/temporal-worker/package.json
 COPY packages/shared-types/package.json ./packages/shared-types/package.json
 COPY packages/database/package.json ./packages/database/package.json
+COPY packages/scraper/package.json ./packages/scraper/package.json
 
 # Install dependencies (this will install for the entire workspace)
 RUN pnpm install
@@ -30,6 +31,10 @@ RUN cd packages/shared-types && pnpm build
 # Copy database package source and build it
 COPY packages/database ./packages/database
 RUN cd packages/database && pnpm build
+
+# Copy scraper package source and build it
+COPY packages/scraper ./packages/scraper
+RUN cd packages/scraper && pnpm build
 
 # Copy temporal worker source code
 COPY apps/temporal-worker ./apps/temporal-worker
