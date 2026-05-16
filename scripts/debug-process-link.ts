@@ -1,7 +1,7 @@
-import { clear } from 'console';
+import { writeFileSync } from 'fs';
 import { fetchPageHTML, processLink } from '../packages/scraper/src';
 
-const url = 'https://www.freeomovie.to/threesome-anal-temptations-4/';
+const url = 'https://www.freeomovie.to/a-day-with-sata-jones/';
 
 async function main() {
   if (!url) {
@@ -9,7 +9,8 @@ async function main() {
     process.exit(1);
   }
   // const html = await fetchPageHTML(url, undefined);
-  // console.log(html);
+  // writeFileSync('/tmp/debug-page.html', html ?? '');
+  // console.log('HTML written to /tmp/debug-page.html');
   console.log(`Processing: ${url}\n`);
   const result = await processLink(url);
   console.log(JSON.stringify(result, null, 2));

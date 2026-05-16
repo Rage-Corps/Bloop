@@ -113,18 +113,37 @@ export function getMediaLinkInfo($: cheerio.CheerioAPI): {
 export function getMediaSources(
   $: cheerio.CheerioAPI
 ): { source: string; url: string }[] {
-  const linkTabs = $('#link-tabs');
-  const sources: { source: string; url: string }[] = [];
-
-  linkTabs.find('li a').each((_index, element) => {
-    const source = $(element).text().trim();
-    const url = $(element).attr('href');
-
-    if (source && url) {
-      sources.push({ source, url });
+  // Try new TABS variable approach
+  let tabsScript: string | null = null;
+  $('script').each((_i, el) => {
+    const html = $(el).html() ?? '';
+    if (html.includes('var TABS')) {
+      tabsScript = html;
+      return false; // break
     }
   });
 
+  if (tabsScript) {
+    const match = (tabsScript as string).match(/var TABS\s*=\s*(\[[\s\S]*?\]);/);
+    if (match) {
+      try {
+        const tabs: { label: string; url: string }[] = JSON.parse(match[1]);
+        return tabs
+          .filter(t => t.label && t.url)
+          .map(t => ({ source: t.label, url: t.url }));
+      } catch {
+        // fall through to legacy
+      }
+    }
+  }
+
+  // Legacy fallback: #link-tabs with li a
+  const sources: { source: string; url: string }[] = [];
+  $('#link-tabs').find('li a').each((_i, el) => {
+    const source = $(el).text().trim();
+    const url = $(el).attr('href');
+    if (source && url) sources.push({ source, url });
+  });
   return sources;
 }
 
