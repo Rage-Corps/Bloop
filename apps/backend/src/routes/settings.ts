@@ -113,7 +113,7 @@ export default async function settingsRoutes(fastify: FastifyInstance) {
             baseUrl,
             maxPages: 10, // Default for scheduled tasks
             batchSize: 5,
-            force: false
+            force: true
           });
           fastify.log.info(`✅ Synced Temporal Schedule: ${scheduleId} (${finalFrequency})`);
         } else {

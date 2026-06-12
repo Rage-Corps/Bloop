@@ -11,6 +11,13 @@ export async function getMediaSourcesPaginated(options: { limit?: number; offset
   return await sourceDao.getSourcesPaginated(options);
 }
 
+const BROKEN_STATUS_CODES = new Set([403, 404, 419, 503, 523]);
+const BROKEN_BODY_PATTERNS = [
+  'video not found',
+  'file is no longer available',
+  'find the video you are looking for',
+];
+
 /**
  * Validates a media source.
  * Returns true if the source is valid, false if it's broken.
@@ -27,14 +34,13 @@ export async function validateMediaSource(url: string): Promise<boolean> {
     });
 
     console.log(`${url} - ${response.status}`);
-    // Design: A source is considered "broken" if HTTP Response Status is 404 or 503.
-    if (response.status === 404 || response.status === 503 || response.status === 523 || response.status === 419) {
+    if (BROKEN_STATUS_CODES.has(response.status)) {
       return false;
     }
 
-    // Design: HTTP Response Body contains the string "video not found" (case-insensitive check).
     const body = await response.text();
-    if (body.toLowerCase().includes('video not found') || body.toLowerCase().includes('file is no longer available') || body.toLowerCase().includes('find the video you are looking for')) {
+    const bodyLower = body.toLowerCase();
+    if (BROKEN_BODY_PATTERNS.some(pattern => bodyLower.includes(pattern))) {
       console.log(`❌ Source broken: ${url}`);
       return false;
     }

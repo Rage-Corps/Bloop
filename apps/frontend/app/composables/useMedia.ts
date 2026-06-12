@@ -82,6 +82,18 @@ export const useMedia = () => {
     }
   };
 
+  const triggerScraping = async (params: { maxPages: number; batchSize: number; force: boolean }) => {
+    try {
+      await $fetch(`${config.public.backendUrl}/api/scraping/trigger`, {
+        method: 'POST',
+        body: params,
+      });
+    } catch (err: any) {
+      error.value = err.message || 'Failed to trigger scraping';
+      throw err;
+    }
+  };
+
   const cleanupMediaSources = async () => {
     try {
       await $fetch(`${config.public.backendUrl}/api/media/cleanup`, {
@@ -99,6 +111,7 @@ export const useMedia = () => {
     fetchMedia,
     fetchMediaById,
     triggerFullScrape,
+    triggerScraping,
     cleanupMediaSources,
   };
 };
