@@ -5,7 +5,7 @@ name: Deploy
 # new images itself, so nothing in CI can reach the server.
 on:
   push:
-    branches: [master, ci/deploy] # TEMP: ci/deploy for testing, remove before merge
+    branches: [master]
   workflow_dispatch:
 
 permissions:
