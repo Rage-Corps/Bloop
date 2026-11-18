@@ -12,7 +12,7 @@ COPY ./packages ./packages
 
 # Install dependencies
 WORKDIR /app
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Fix CSS path for Docker build
 WORKDIR /app/apps/frontend
