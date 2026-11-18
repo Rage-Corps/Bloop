@@ -6,7 +6,7 @@ RUN corepack enable pnpm && apk add --no-cache curl
 WORKDIR /app
 
 # Copy everything first to see what we're working with
-COPY package.json pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY ./apps/frontend ./apps/frontend
 COPY ./packages ./packages
 
